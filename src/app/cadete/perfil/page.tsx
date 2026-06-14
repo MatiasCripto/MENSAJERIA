@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
+import { Capacitor } from '@capacitor/core'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
@@ -17,6 +18,21 @@ export default function CadetePerfilPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+
+  const redirectTo = (path: string) => {
+    if (Capacitor.isNativePlatform()) {
+      router.replace(path)
+    } else {
+      window.location.href = path
+    }
+  }
+
+  const handleSignOut = async () => {
+    setSigningOut(true)
+    await supabase.auth.signOut()
+    redirectTo('/login')
+  }
 
   useEffect(() => {
     if (!loading && (!user || user.rol !== 'cadete')) {
@@ -166,6 +182,18 @@ export default function CadetePerfilPage() {
           </Button>
         </div>
       </Card>
+
+      {/* Sign out */}
+      <div className="pt-2">
+        <Button
+          variant="outline"
+          className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-300"
+          onClick={handleSignOut}
+          disabled={signingOut}
+        >
+          {signingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+        </Button>
+      </div>
     </div>
   )
 }
