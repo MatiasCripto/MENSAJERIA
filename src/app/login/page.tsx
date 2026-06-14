@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { useEffect, useState } from 'react'
 
 export default function LoginPage() {
@@ -29,7 +30,7 @@ export default function LoginPage() {
 
   if (sessionLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-[#0a0a0a]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
@@ -96,18 +97,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4 dark:bg-[#0a0a0a]">
       <div className="w-full max-w-sm">
+        {/* Logo + Brand */}
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Mensajería</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <img
+            src="/iconapk.png"
+            alt="Moto Express"
+            className="mx-auto mb-4 h-24 w-24"
+          />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Moto Express</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
             Sistema de gestión de delivery
           </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
               Email
             </label>
             <input
@@ -116,13 +123,13 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-zinc-500"
               placeholder="admin@mensajeria.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
               Contraseña
             </label>
             <input
@@ -131,14 +138,14 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white"
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/50">
+              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
             </div>
           )}
 
@@ -151,11 +158,16 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* Theme toggle */}
+        <div className="mt-6 flex justify-center">
+          <ThemeToggle />
+        </div>
+
         {debugLogs.length > 0 && (
-          <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-3">
-            <p className="mb-1 text-xs font-semibold text-gray-500">DEBUG LOGS:</p>
+          <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
+            <p className="mb-1 text-xs font-semibold text-gray-500 dark:text-zinc-400">DEBUG LOGS:</p>
             {debugLogs.map((msg, i) => (
-              <p key={i} className="text-[11px] leading-5 text-gray-600 font-mono">{msg}</p>
+              <p key={i} className="text-[11px] leading-5 text-gray-600 font-mono dark:text-zinc-400">{msg}</p>
             ))}
           </div>
         )}

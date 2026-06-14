@@ -295,10 +295,10 @@ export default function PedidoDetailPage() {
   if (loading || fetching) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-gray-200" />
+        <div className="h-8 w-48 animate-pulse rounded bg-gray-200 dark:bg-zinc-700" />
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-64 animate-pulse rounded-lg bg-gray-100" />
-          <div className="h-64 animate-pulse rounded-lg bg-gray-100" />
+          <div className="h-64 animate-pulse rounded-lg bg-gray-100 dark:bg-zinc-800" />
+          <div className="h-64 animate-pulse rounded-lg bg-gray-100 dark:bg-zinc-800" />
         </div>
       </div>
     )
@@ -307,10 +307,10 @@ export default function PedidoDetailPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <p className="mb-2 text-lg font-medium text-red-600">
+        <p className="mb-2 text-lg font-medium text-red-600 dark:text-red-400">
           Error al cargar el pedido
         </p>
-        <p className="mb-4 text-sm text-gray-500">{error}</p>
+        <p className="mb-4 text-sm text-gray-500 dark:text-zinc-400">{error}</p>
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => router.push('/operador/pedidos')}>
             Volver a pedidos
@@ -324,7 +324,7 @@ export default function PedidoDetailPage() {
   if (!pedido) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <p className="text-lg font-medium text-gray-500">Pedido no encontrado</p>
+        <p className="text-lg font-medium text-gray-500 dark:text-zinc-400">Pedido no encontrado</p>
         <Button
           variant="outline"
           className="mt-4"
@@ -366,7 +366,7 @@ export default function PedidoDetailPage() {
       {/* Back button */}
       <button
         onClick={() => router.push('/operador/pedidos')}
-        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -378,7 +378,7 @@ export default function PedidoDetailPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Pedido {currentPedido.codigo ?? currentPedido.palabra_clave}
             </h1>
             <span
@@ -390,7 +390,7 @@ export default function PedidoDetailPage() {
               {getEstadoLabel(currentPedido.estado)}
             </span>
           </div>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
             Creado {formatDate(currentPedido.created_at)}
           </p>
         </div>
@@ -406,13 +406,13 @@ export default function PedidoDetailPage() {
 
       {/* Tracking link */}
       {currentPedido.token_cliente && (
-        <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 shadow-sm">
+        <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/30">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-semibold text-blue-800">
+              <h2 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
                 Link de seguimiento para el cliente
               </h2>
-              <p className="mt-1 break-all text-sm text-blue-700 select-all font-mono">
+              <p className="mt-1 break-all text-sm text-blue-700 select-all font-mono dark:text-blue-400">
                 {window.location.origin}/seguimiento/{currentPedido.token_cliente}
               </p>
             </div>
@@ -438,44 +438,44 @@ export default function PedidoDetailPage() {
         <div className="space-y-6">
           <Card title="Dirección de retiro">
             <div className="space-y-2 text-sm">
-              <p><span className="font-medium text-gray-700">Dirección:</span> {currentPedido.retiro_direccion}</p>
-              <p><span className="font-medium text-gray-700">Contacto:</span> {currentPedido.retiro_contacto}</p>
-              <p><span className="font-medium text-gray-700">Teléfono:</span> {currentPedido.retiro_telefono}</p>
+              <p><span className="font-medium text-gray-700 dark:text-zinc-300">Dirección:</span> {currentPedido.retiro_direccion}</p>
+              <p><span className="font-medium text-gray-700 dark:text-zinc-300">Contacto:</span> {currentPedido.retiro_contacto}</p>
+              <p><span className="font-medium text-gray-700 dark:text-zinc-300">Teléfono:</span> {currentPedido.retiro_telefono}</p>
             </div>
           </Card>
 
           <Card title="Dirección de entrega">
             <div className="space-y-2 text-sm">
-              <p><span className="font-medium text-gray-700">Dirección:</span> {currentPedido.entrega_direccion}</p>
-              <p><span className="font-medium text-gray-700">Contacto:</span> {currentPedido.entrega_contacto}</p>
-              <p><span className="font-medium text-gray-700">Teléfono:</span> {currentPedido.entrega_telefono}</p>
+              <p><span className="font-medium text-gray-700 dark:text-zinc-300">Dirección:</span> {currentPedido.entrega_direccion}</p>
+              <p><span className="font-medium text-gray-700 dark:text-zinc-300">Contacto:</span> {currentPedido.entrega_contacto}</p>
+              <p><span className="font-medium text-gray-700 dark:text-zinc-300">Teléfono:</span> {currentPedido.entrega_telefono}</p>
             </div>
           </Card>
 
           {currentPedido.notas && (
             <Card title="Notas">
-              <p className="text-sm text-gray-700">{currentPedido.notas}</p>
+              <p className="text-sm text-gray-700 dark:text-zinc-300">{currentPedido.notas}</p>
             </Card>
           )}
 
           <Card title="Información adicional">
             <div className="space-y-2 text-sm">
               <p>
-                <span className="font-medium text-gray-700">Palabra clave:</span>{' '}
-                <span className="rounded-md bg-gray-100 px-2 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide">
+                <span className="font-medium text-gray-700 dark:text-zinc-300">Palabra clave:</span>{' '}
+                <span className="rounded-md bg-gray-100 px-2 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide dark:bg-zinc-800">
                   {currentPedido.palabra_clave}
                 </span>
               </p>
               <p>
-                <span className="font-medium text-gray-700">Cadete asignado:</span>{' '}
+                <span className="font-medium text-gray-700 dark:text-zinc-300">Cadete asignado:</span>{' '}
                 {currentPedido.cadete_id ? (
                   <CadeteName cadeteId={currentPedido.cadete_id} />
                 ) : (
-                  <span className="text-gray-400">No asignado</span>
+                  <span className="text-gray-400 dark:text-zinc-500">No asignado</span>
                 )}
               </p>
               <p>
-                <span className="font-medium text-gray-700">Última actualización:</span>{' '}
+                <span className="font-medium text-gray-700 dark:text-zinc-300">Última actualización:</span>{' '}
                 {formatDate(currentPedido.updated_at)}
               </p>
             </div>
@@ -544,31 +544,31 @@ export default function PedidoDetailPage() {
             ) : (
               <div className="space-y-2 text-sm">
                 <p>
-                  <span className="font-medium text-gray-700">Cliente / Empresa:</span>{' '}
+                  <span className="font-medium text-gray-700 dark:text-zinc-300">Cliente / Empresa:</span>{' '}
                   {currentPedido.cliente_empresa || (
-                    <span className="text-gray-400">—</span>
+                    <span className="text-gray-400 dark:text-zinc-500">—</span>
                   )}
                 </p>
                 <p>
-                  <span className="font-medium text-gray-700">Contacto:</span>{' '}
+                  <span className="font-medium text-gray-700 dark:text-zinc-300">Contacto:</span>{' '}
                   {currentPedido.contacto_nombre || (
-                    <span className="text-gray-400">—</span>
+                    <span className="text-gray-400 dark:text-zinc-500">—</span>
                   )}
                 </p>
                 <p>
-                  <span className="font-medium text-gray-700">Hora de salida:</span>{' '}
+                  <span className="font-medium text-gray-700 dark:text-zinc-300">Hora de salida:</span>{' '}
                   {currentPedido.hora_salida || (
-                    <span className="text-gray-400">—</span>
+                    <span className="text-gray-400 dark:text-zinc-500">—</span>
                   )}
                 </p>
                 <p>
-                  <span className="font-medium text-gray-700">Importe:</span>{' '}
+                  <span className="font-medium text-gray-700 dark:text-zinc-300">Importe:</span>{' '}
                   {currentPedido.importe != null
                     ? `$${Number(currentPedido.importe).toFixed(2)}`
-                    : <span className="text-gray-400">—</span>}
+                    : <span className="text-gray-400 dark:text-zinc-500">—</span>}
                 </p>
                 <p>
-                  <span className="font-medium text-gray-700">Forma de pago:</span>{' '}
+                  <span className="font-medium text-gray-700 dark:text-zinc-300">Forma de pago:</span>{' '}
                   {currentPedido.forma_pago
                     ? FORMA_PAGO_LABELS[currentPedido.forma_pago] || currentPedido.forma_pago
                     : <span className="text-gray-400">—</span>}
@@ -600,7 +600,7 @@ export default function PedidoDetailPage() {
           {/* Attempts history */}
           <Card title="Historial de intentos">
             {intentos.length === 0 ? (
-              <p className="py-4 text-center text-sm text-gray-400">
+              <p className="py-4 text-center text-sm text-gray-400 dark:text-zinc-500">
                 No hay intentos de entrega registrados
               </p>
             ) : (
@@ -608,12 +608,12 @@ export default function PedidoDetailPage() {
                 {intentos.map((intento) => (
                   <div
                     key={intento.id}
-                    className="relative border-l-2 border-gray-200 pl-4"
+                    className="relative border-l-2 border-gray-200 pl-4 dark:border-zinc-800"
                   >
-                    <div className="absolute -left-[5px] top-1 h-2 w-2 rounded-full bg-gray-400" />
+                    <div className="absolute -left-[5px] top-1 h-2 w-2 rounded-full bg-gray-400 dark:bg-zinc-600" />
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-500">
+                        <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">
                           {formatDate(intento.created_at)}
                         </span>
                         <Badge
@@ -629,7 +629,7 @@ export default function PedidoDetailPage() {
                         </Badge>
                       </div>
                       {intento.notas && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-zinc-300">
                           {intento.notas}
                         </p>
                       )}
@@ -650,7 +650,7 @@ export default function PedidoDetailPage() {
                     href={intento.foto_url!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block overflow-hidden rounded-lg border border-gray-200"
+                    className="block overflow-hidden rounded-lg border border-gray-200 dark:border-zinc-800"
                   >
                     <img
                       src={intento.foto_url!}
@@ -668,8 +668,8 @@ export default function PedidoDetailPage() {
       {/* Assign cadete dialog */}
       {showAssignDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-[#1a1a1a]">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Asignar cadete
             </h2>
 

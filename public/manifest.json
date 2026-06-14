@@ -1,11 +1,11 @@
 {
-  "name": "Mensajería - Sistema de Gestión",
-  "short_name": "Mensajería",
+  "name": "Moto Express - Sistema de Gestión",
+  "short_name": "Moto Express",
   "description": "Sistema de gestión de mensajería y delivery",
   "start_url": "/login",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "background_color": "#0a0a0a",
+  "theme_color": "#dc2626",
   "orientation": "portrait",
   "icons": [
     {

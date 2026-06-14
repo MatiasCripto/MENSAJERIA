@@ -111,7 +111,7 @@ export default function PedidosPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -121,8 +121,8 @@ export default function PedidosPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pedidos</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
             Gestiona todos los pedidos del sistema
           </p>
         </div>
@@ -157,11 +157,11 @@ export default function PedidosPage() {
 
       {/* Error state */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
+          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
           <button
             onClick={fetchPedidos}
-            className="mt-2 text-sm font-medium text-red-700 underline hover:text-red-600"
+            className="mt-2 text-sm font-medium text-red-700 underline hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
           >
             Reintentar
           </button>
@@ -173,7 +173,7 @@ export default function PedidosPage() {
         <Card>
           <div className="animate-pulse space-y-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-10 rounded bg-gray-100" />
+              <div key={i} className="h-10 rounded bg-gray-100 dark:bg-zinc-800" />
             ))}
           </div>
         </Card>
@@ -184,10 +184,10 @@ export default function PedidosPage() {
         <Card>
           {pedidos.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-lg font-medium text-gray-500">
+              <p className="text-lg font-medium text-gray-500 dark:text-zinc-400">
                 No hay pedidos
               </p>
-              <p className="mt-1 text-sm text-gray-400">
+              <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">
                 {filters.estado || filters.cadete
                   ? 'No se encontraron pedidos con los filtros seleccionados'
                   : 'Crea tu primer pedido para comenzar'}
@@ -204,46 +204,46 @@ export default function PedidosPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-800">
+                <thead className="bg-gray-50 dark:bg-zinc-800/50">
                   <tr>
-                    <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                       Código
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                       Palabra clave
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                       Estado
                     </th>
-                    <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
+                    <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400 md:table-cell">
                       Retiro
                     </th>
-                    <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
+                    <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400 md:table-cell">
                       Entrega
                     </th>
-                    <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
+                    <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400 lg:table-cell">
                       Creado
                     </th>
-                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                       Acción
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-y divide-gray-200 bg-white dark:divide-zinc-800 dark:bg-[#1a1a1a]">
                   {pedidos.map((pedido) => (
                     <tr
                       key={pedido.id}
-                      className="cursor-pointer transition-colors hover:bg-gray-50"
+                      className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800/50"
                       onClick={() =>
                         router.push(`/operador/pedidos/${pedido.id}`)
                       }
                     >
-                      <td className="whitespace-nowrap px-3 py-3 text-sm font-medium text-gray-900">
+                      <td className="whitespace-nowrap px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
                         {pedido.codigo ?? '-'}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-3 text-sm text-gray-700">
-                        <span className="rounded-md bg-gray-100 px-2 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide">
+                      <td className="whitespace-nowrap px-3 py-3 text-sm text-gray-700 dark:text-zinc-300">
+                        <span className="rounded-md bg-gray-100 px-2 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide dark:bg-zinc-800">
                           {pedido.palabra_clave}
                         </span>
                       </td>
@@ -257,13 +257,13 @@ export default function PedidosPage() {
                           {getEstadoLabel(pedido.estado)}
                         </span>
                       </td>
-                      <td className="hidden max-w-[200px] truncate px-3 py-3 text-sm text-gray-500 md:table-cell">
+                      <td className="hidden max-w-[200px] truncate px-3 py-3 text-sm text-gray-500 dark:text-zinc-400 md:table-cell">
                         {pedido.retiro_direccion}
                       </td>
-                      <td className="hidden max-w-[200px] truncate px-3 py-3 text-sm text-gray-500 md:table-cell">
+                      <td className="hidden max-w-[200px] truncate px-3 py-3 text-sm text-gray-500 dark:text-zinc-400 md:table-cell">
                         {pedido.entrega_direccion}
                       </td>
-                      <td className="hidden whitespace-nowrap px-3 py-3 text-sm text-gray-500 lg:table-cell">
+                      <td className="hidden whitespace-nowrap px-3 py-3 text-sm text-gray-500 dark:text-zinc-400 lg:table-cell">
                         {formatDate(pedido.created_at)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 text-right text-sm">

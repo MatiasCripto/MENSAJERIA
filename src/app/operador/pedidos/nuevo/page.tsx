@@ -168,7 +168,7 @@ export default function NuevoPedidoPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -176,8 +176,8 @@ export default function NuevoPedidoPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Nuevo Pedido</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nuevo Pedido</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
           Completa los datos del pedido para crearlo en el sistema
         </p>
       </div>
@@ -252,7 +252,7 @@ export default function NuevoPedidoPage() {
               placeholder="Instrucciones adicionales para el cadete..."
               value={form.notas}
               onChange={handleChange}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-zinc-500"
             />
           </Card>
 
@@ -320,24 +320,24 @@ export default function NuevoPedidoPage() {
 
       {/* Resultado: mostrar después de crear */}
       {pedidoCreado && (
-        <div className="rounded-xl border-2 border-green-200 bg-green-50 p-6 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <span className="text-2xl text-green-600">✓</span>
+        <div className="rounded-xl border-2 border-green-200 bg-green-50 p-6 text-center shadow-sm dark:border-green-900/50 dark:bg-green-950/30">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+            <span className="text-2xl text-green-600 dark:text-green-400">✓</span>
           </div>
-          <h2 className="text-lg font-bold text-green-800">Pedido creado</h2>
+          <h2 className="text-lg font-bold text-green-800 dark:text-green-300">Pedido creado</h2>
 
           <div className="mt-4 space-y-3 text-left">
-            <div className="rounded-lg bg-white p-3">
-              <p className="text-xs text-gray-500">Palabra clave</p>
-              <p className="text-xl font-bold text-gray-900">{pedidoCreado.palabra_clave}</p>
+            <div className="rounded-lg bg-white p-3 dark:bg-[#1a1a1a]">
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Palabra clave</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{pedidoCreado.palabra_clave}</p>
             </div>
-            <div className="rounded-lg bg-white p-3">
-              <p className="text-xs text-gray-500">Código</p>
-              <p className="text-lg font-semibold text-gray-900">#{pedidoCreado.codigo}</p>
+            <div className="rounded-lg bg-white p-3 dark:bg-[#1a1a1a]">
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Código</p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">#{pedidoCreado.codigo}</p>
             </div>
-            <div className="rounded-lg bg-white p-3">
-              <p className="text-xs text-gray-500">Link de seguimiento para el cliente</p>
-              <p className="mt-1 break-all text-sm font-mono text-blue-600 select-all">
+            <div className="rounded-lg bg-white p-3 dark:bg-[#1a1a1a]">
+              <p className="text-xs text-gray-500 dark:text-zinc-400">Link de seguimiento para el cliente</p>
+              <p className="mt-1 break-all text-sm font-mono text-blue-600 select-all dark:text-blue-400">
                 {pedidoCreado.tracking_url}
               </p>
               <button
@@ -346,7 +346,7 @@ export default function NuevoPedidoPage() {
                   navigator.clipboard.writeText(pedidoCreado.tracking_url)
                   toast.success('Link copiado al portapapeles')
                 }}
-                className="mt-1 text-xs text-blue-500 hover:text-blue-700 underline"
+                className="mt-1 text-xs text-blue-500 hover:text-blue-700 underline dark:text-blue-400 dark:hover:text-blue-300"
               >
                 Copiar link
               </button>

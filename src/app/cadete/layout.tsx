@@ -5,6 +5,7 @@ import { useCadetePosition } from '@/lib/hooks/useCadetePosition'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
 
 export default function CadeteLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useSession()
@@ -35,8 +36,8 @@ export default function CadeteLayout({ children }: { children: React.ReactNode }
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-[#0a0a0a]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -48,30 +49,39 @@ export default function CadeteLayout({ children }: { children: React.ReactNode }
   const isPerfilActive = pathname === '/cadete/perfil'
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 pb-16">
+    <div className="flex min-h-screen flex-col bg-white pb-16 dark:bg-[#0a0a0a]">
       {/* GPS Status Banner */}
       <div
-        className={`px-4 py-1.5 text-center text-xs font-medium ${
+        className={`flex items-center justify-between px-4 py-1.5 text-center text-xs font-medium ${
           gpsActivo
-            ? 'bg-green-50 text-green-700'
-            : 'bg-yellow-50 text-yellow-700'
+            ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400'
+            : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400'
         }`}
       >
-        {gpsActivo
-          ? 'GPS activo'
-          : 'GPS desactivado — activá la ubicación'}
+        <span className="flex-1">
+          {gpsActivo
+            ? 'GPS activo'
+            : 'GPS desactivado — activá la ubicación'}
+        </span>
+        <ThemeToggle />
+      </div>
+
+      {/* Header with logo */}
+      <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3 dark:border-zinc-800">
+        <img src="/iconapk.png" alt="Moto Express" className="h-8 w-8" />
+        <h1 className="text-lg font-bold text-gray-900 dark:text-white">Moto Express</h1>
       </div>
 
       {/* Main Content */}
       <main className="flex-1">{children}</main>
 
       {/* Bottom Tab Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white dark:border-zinc-800 dark:bg-[#1a1a1a]">
         <div className="mx-auto flex max-w-lg items-center justify-around">
           <Link
             href="/cadete"
             className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${
-              isPedidosActive ? 'text-blue-600' : 'text-gray-500'
+              isPedidosActive ? 'text-primary' : 'text-gray-500 dark:text-zinc-400'
             }`}
           >
             <svg
@@ -89,7 +99,7 @@ export default function CadeteLayout({ children }: { children: React.ReactNode }
           <Link
             href="/cadete/perfil"
             className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${
-              isPerfilActive ? 'text-blue-600' : 'text-gray-500'
+              isPerfilActive ? 'text-primary' : 'text-gray-500 dark:text-zinc-400'
             }`}
           >
             <svg

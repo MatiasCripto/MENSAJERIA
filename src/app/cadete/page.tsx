@@ -71,11 +71,11 @@ export default function CadetePage() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="animate-pulse rounded-lg border border-gray-200 bg-white p-4"
+            className="animate-pulse rounded-lg border border-gray-200 bg-white p-4 dark:border-zinc-800 dark:bg-[#1a1a1a]"
           >
-            <div className="mb-2 h-6 w-24 rounded bg-gray-200" />
-            <div className="mb-1 h-4 w-48 rounded bg-gray-100" />
-            <div className="h-4 w-36 rounded bg-gray-100" />
+            <div className="mb-2 h-6 w-24 rounded bg-gray-200 dark:bg-zinc-700" />
+            <div className="mb-1 h-4 w-48 rounded bg-gray-100 dark:bg-zinc-800" />
+            <div className="h-4 w-36 rounded bg-gray-100 dark:bg-zinc-800" />
           </div>
         ))}
       </div>
@@ -95,14 +95,14 @@ export default function CadetePage() {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="currentColor"
-          className="mb-4 h-16 w-16 text-gray-300"
+          className="mb-4 h-16 w-16 text-gray-300 dark:text-zinc-600"
         >
           <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h12V6.375c0-1.036-.84-1.875-1.875-1.875h-8.25ZM13.5 15h-12v2.625c0 1.036.84 1.875 1.875 1.875h.375v-1.5a1.5 1.5 0 0 1 3 0v1.5h1.5v-1.5a1.5 1.5 0 0 1 3 0v1.5h.375c1.035 0 1.875-.84 1.875-1.875V15Z" />
         </svg>
-        <p className="text-lg font-medium text-gray-900">
+        <p className="text-lg font-medium text-gray-900 dark:text-white">
           No tenés pedidos asignados
         </p>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
           Cuando te asignen un pedido, aparecerá acá.
         </p>
         <Button
@@ -121,7 +121,7 @@ export default function CadetePage() {
     <div className="p-4">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-900">Mis pedidos</h1>
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Mis pedidos</h1>
         <Button
           variant="ghost"
           size="sm"
@@ -164,10 +164,10 @@ export default function CadetePage() {
             <Link
               key={pedido.id}
               href={`/cadete/pedidos/${pedido.id}`}
-              className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md active:scale-[0.99]"
+              className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md active:scale-[0.99] dark:border-zinc-800 dark:bg-[#1a1a1a]"
             >
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   {pedido.estado === 'en_retiro'
                     ? 'Retiro'
                     : pedido.estado === 'en_camino'
@@ -178,14 +178,14 @@ export default function CadetePage() {
                   {getEstadoLabel(pedido.estado)}
                 </Badge>
               </div>
-              <p className="mb-1 text-sm text-gray-600">{direccion}</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-zinc-300">{direccion}</p>
               {contacto && (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-zinc-400">
                   {contacto}
                   {telefono ? ` — ${telefono}` : ''}
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
                 {formatDate(pedido.created_at)}
               </p>
             </Link>

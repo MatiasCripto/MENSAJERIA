@@ -132,7 +132,7 @@ export default function MapaPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -142,12 +142,12 @@ export default function MapaPage() {
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mapa en vivo</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mapa en vivo</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
             Ubicación de los cadetes en tiempo real
           </p>
         </div>
-        <div className="flex items-center gap-3 text-sm text-gray-500">
+        <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-zinc-400">
           {lastUpdate && (
             <span>
               Última actualización: {formatTime(lastUpdate.toISOString())}
@@ -156,7 +156,7 @@ export default function MapaPage() {
           <button
             onClick={fetchPositions}
             disabled={fetching}
-            className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-50 dark:bg-[#1a1a1a] dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800"
           >
             {fetching ? 'Actualizando...' : 'Actualizar'}
           </button>
@@ -166,13 +166,13 @@ export default function MapaPage() {
       {/* Cadete count */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <Card>
-          <p className="text-sm text-gray-500">Cadetes activos</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Cadetes activos</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
             {positions.length}
           </p>
         </Card>
         <Card>
-          <p className="text-sm text-gray-500">Con ubicación</p>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Con ubicación</p>
           <p className="mt-1 text-2xl font-bold text-green-600">
             {positions.filter((p) => p.lat && p.lng).length}
           </p>
@@ -185,7 +185,7 @@ export default function MapaPage() {
           {positions.map((pos) => (
             <span
               key={pos.cadete_id}
-              className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200"
+              className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-900"
             >
               <span className="h-2 w-2 rounded-full bg-green-500" />
               {pos.cadete_nombre}
@@ -196,11 +196,11 @@ export default function MapaPage() {
 
       {/* Error state */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
+          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
           <button
             onClick={fetchPositions}
-            className="mt-2 text-sm font-medium text-red-700 underline hover:text-red-600"
+            className="mt-2 text-sm font-medium text-red-700 underline hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
           >
             Reintentar
           </button>
@@ -210,8 +210,8 @@ export default function MapaPage() {
       {/* Map area */}
       <div className="flex-1">
         {fetching && positions.length === 0 ? (
-          <div className="flex h-full min-h-[400px] items-center justify-center rounded-lg bg-gray-100">
-            <p className="text-sm text-gray-500">Cargando ubicaciones...</p>
+          <div className="flex h-full min-h-[400px] items-center justify-center rounded-lg bg-gray-100 dark:bg-zinc-800">
+            <p className="text-sm text-gray-500 dark:text-zinc-400">Cargando ubicaciones...</p>
           </div>
         ) : (
           <LiveMap positions={positions} />

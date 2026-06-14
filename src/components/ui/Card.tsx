@@ -11,15 +11,15 @@ function Card({ title, className, children, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-gray-200 bg-white shadow-sm',
+        'rounded-lg border border-gray-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#1a1a1a]',
         className,
       )}
       {...props}
     >
       {title && (
-        <div className="border-b border-gray-200 px-4 py-3">
+        <div className="border-b border-gray-200 px-4 py-3 dark:border-zinc-800">
           {typeof title === 'string' ? (
-            <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
           ) : (
             title
           )}

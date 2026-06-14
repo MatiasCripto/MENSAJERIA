@@ -1,13 +1,20 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
-  --color-primary-light: #dbeafe;
+  --color-primary: #dc2626;
+  --color-primary-dark: #b91c1c;
+  --color-primary-light: #fee2e2;
   --color-success: #16a34a;
   --color-warning: #d97706;
   --color-danger: #dc2626;
   --color-info: #0891b2;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f4f4f5;
+  --color-border: #e4e4e7;
+  --color-text: #09090b;
+  --color-text-secondary: #52525b;
 }
 
 body {

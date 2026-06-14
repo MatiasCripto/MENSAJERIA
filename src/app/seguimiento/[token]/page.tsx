@@ -117,7 +117,7 @@ export default function TrackingPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#0a0a0a]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
@@ -125,13 +125,13 @@ export default function TrackingPage() {
 
   if (error || !pedido) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 dark:bg-[#0a0a0a]">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/50">
             <span className="text-2xl">!</span>
           </div>
-          <h1 className="text-xl font-semibold text-gray-900">Pedido no encontrado</h1>
-          <p className="mt-2 text-sm text-gray-500">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Pedido no encontrado</h1>
+          <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">
             Verificá que el link de seguimiento sea correcto.
           </p>
         </div>
@@ -150,11 +150,11 @@ export default function TrackingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
       {/* Header */}
-      <div className="bg-white px-4 py-6 text-center shadow-sm">
-        <p className="text-sm text-gray-500">Tu pedido</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900">{pedido.palabra_clave}</h1>
+      <div className="bg-white px-4 py-6 text-center shadow-sm dark:bg-[#1a1a1a]">
+        <p className="text-sm text-gray-500 dark:text-zinc-400">Tu pedido</p>
+        <h1 className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">{pedido.palabra_clave}</h1>
         <div className="mt-3">
           <span
             className={`inline-block rounded-full px-4 py-1.5 text-sm font-medium ${getEstadoColor(pedido.estado)}`}
@@ -167,7 +167,7 @@ export default function TrackingPage() {
       <div className="mx-auto max-w-lg space-y-4 p-4">
         {/* Map */}
         {markers.length > 0 && (
-          <div className="overflow-hidden rounded-xl border border-gray-200">
+          <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-zinc-800">
             <MapWithNoSSR
               markers={markers}
               height="250px"
@@ -177,21 +177,21 @@ export default function TrackingPage() {
         )}
 
         {/* Delivery Address */}
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-500">Dirección de entrega</h2>
-          <p className="mt-1 text-base font-medium text-gray-900">{pedido.entrega_direccion}</p>
-          <p className="mt-0.5 text-sm text-gray-600">
+        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-[#1a1a1a]">
+          <h2 className="text-sm font-medium text-gray-500 dark:text-zinc-400">Dirección de entrega</h2>
+          <p className="mt-1 text-base font-medium text-gray-900 dark:text-white">{pedido.entrega_direccion}</p>
+          <p className="mt-0.5 text-sm text-gray-600 dark:text-zinc-300">
             {pedido.entrega_contacto} - {pedido.entrega_telefono}
           </p>
         </div>
 
         {/* Delivery confirmation */}
         {pedido.estado === 'entregado' && (
-          <div className="rounded-xl bg-green-50 p-4 text-center shadow-sm">
+          <div className="rounded-xl bg-green-50 p-4 text-center shadow-sm dark:bg-green-950/30">
             <div className="text-3xl">✓</div>
-            <h2 className="mt-1 text-lg font-semibold text-green-800">Entregado</h2>
+            <h2 className="mt-1 text-lg font-semibold text-green-800 dark:text-green-400">Entregado</h2>
             {intentos.filter(i => i.tipo === 'entregado').length > 0 && (
-              <div className="mt-1 text-sm text-green-600">
+              <div className="mt-1 text-sm text-green-600 dark:text-green-300">
                 <p>Recibió: {intentos.filter(i => i.tipo === 'entregado')[0]?.receptor_nombre}</p>
                 <p>{formatDate(intentos.filter(i => i.tipo === 'entregado')[0]?.created_at)}</p>
               </div>
@@ -201,21 +201,21 @@ export default function TrackingPage() {
 
         {/* Failed attempts (without photos) */}
         {intentos.filter(i => i.tipo === 'no_atendio' || i.tipo === 'cerrado' || i.tipo === 'otro').length > 0 && (
-          <div className="rounded-xl bg-white p-4 shadow-sm">
-            <h2 className="mb-3 text-sm font-medium text-gray-500">Intentos de entrega</h2>
+          <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-[#1a1a1a]">
+            <h2 className="mb-3 text-sm font-medium text-gray-500 dark:text-zinc-400">Intentos de entrega</h2>
             <div className="space-y-3">
               {intentos
                 .filter(i => i.tipo === 'no_atendio' || i.tipo === 'cerrado' || i.tipo === 'otro')
                 .map((intento) => (
                   <div key={intento.id} className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-xs font-medium text-yellow-800">
+                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-xs font-medium text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-400">
                       !
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {getTipoIntentoLabel(intento.tipo)}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">
                         {formatDate(intento.created_at)}
                       </p>
                     </div>
@@ -226,15 +226,15 @@ export default function TrackingPage() {
         )}
 
         {/* Pickup info */}
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-500">Dirección de retiro</h2>
-          <p className="mt-1 text-sm text-gray-900">{pedido.retiro_direccion}</p>
+        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-[#1a1a1a]">
+          <h2 className="text-sm font-medium text-gray-500 dark:text-zinc-400">Dirección de retiro</h2>
+          <p className="mt-1 text-sm text-gray-900 dark:text-white">{pedido.retiro_direccion}</p>
         </div>
       </div>
 
       {/* Footer */}
       <div className="pb-8 text-center">
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-400 dark:text-zinc-500">
           Código: #{pedido.codigo}
         </p>
       </div>

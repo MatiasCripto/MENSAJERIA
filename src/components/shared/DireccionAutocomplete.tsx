@@ -105,12 +105,12 @@ export function DireccionAutocomplete({
         autoComplete="off"
       />
       {open && suggestions.length > 0 && (
-        <ul className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
+        <ul className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-[#1a1a1a]">
           {suggestions.map((s, i) => (
             <li
               key={i}
               onClick={() => handleSelect(s)}
-              className="cursor-pointer px-3 py-2.5 text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 first:rounded-t-lg last:rounded-b-lg"
+              className="cursor-pointer px-3 py-2.5 text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 first:rounded-t-lg last:rounded-b-lg dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
             >
               {s.display_name}
             </li>
