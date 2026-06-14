@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 export default function LoginPage() {
@@ -12,7 +11,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const { user, loading: sessionLoading } = useSession()
-  const router = useRouter()
   const supabase = createClient()
 
   const addLog = (msg: string) => {
@@ -24,10 +22,10 @@ export default function LoginPage() {
   useEffect(() => {
     if (!sessionLoading && user) {
       addLog(`SessionProvider ya tiene user: rol=${user.rol}, redirigiendo`)
-      router.replace(user.rol === 'operador' ? '/operador' : '/cadete')
+      window.location.href = user.rol === 'operador' ? '/operador' : '/cadete'
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, sessionLoading, router])
+  }, [user, sessionLoading])
 
   if (sessionLoading) {
     return (
@@ -94,7 +92,7 @@ export default function LoginPage() {
     // 4. Redirigir según rol
     const destino = perfil.rol === 'operador' ? '/operador' : '/cadete'
     addLog(`4. ✓ perfil obtenido: id=${perfil.id} rol=${perfil.rol} → redirigiendo a ${destino}`)
-    router.replace(destino)
+    window.location.href = destino
   }
 
   return (
