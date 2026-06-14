@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { Capacitor } from '@capacitor/core'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 export default function LoginPage() {
@@ -12,7 +14,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const { user, loading: sessionLoading } = useSession()
+  const router = useRouter()
   const supabase = createClient()
+
+  const redirectTo = (path: string) => {
+    if (Capacitor.isNativePlatform()) {
+      router.replace(path)
+    } else {
+      window.location.href = path
+    }
+  }
 
   const addLog = (msg: string) => {
     console.log('[LOGIN DEBUG]', msg)
@@ -23,7 +34,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (!sessionLoading && user) {
       addLog(`SessionProvider ya tiene user: rol=${user.rol}, redirigiendo`)
-      window.location.href = user.rol === 'operador' ? '/operador' : '/cadete'
+      redirectTo(user.rol === 'operador' ? '/operador' : '/cadete')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, sessionLoading])
@@ -93,7 +104,7 @@ export default function LoginPage() {
     // 4. Redirigir según rol
     const destino = perfil.rol === 'operador' ? '/operador' : '/cadete'
     addLog(`4. ✓ perfil obtenido: id=${perfil.id} rol=${perfil.rol} → redirigiendo a ${destino}`)
-    window.location.href = destino
+    redirectTo(destino)
   }
 
   return (
