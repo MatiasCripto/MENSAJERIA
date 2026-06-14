@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle'
 const navLinks = [
   { href: '/operador', label: 'Dashboard', icon: '📊' },
   { href: '/operador/pedidos', label: 'Pedidos', icon: '📦' },
+  { href: '/operador/equipo', label: 'Equipo', icon: '👥' },
   { href: '/operador/cadetes', label: 'Cadetes', icon: '👤' },
   { href: '/operador/reportes', label: 'Reportes', icon: '📈' },
   { href: '/operador/recorridos', label: 'Recorridos', icon: '📍' },

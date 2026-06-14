@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils/cn'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { useEffect, useState } from 'react'
 
 // Fix default marker icon issue with Next.js/webpack
