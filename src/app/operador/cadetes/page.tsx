@@ -64,13 +64,14 @@ export default function CadetesPage() {
     setCreating(true)
 
     try {
-      const res = await fetch('/api/cadetes', {
+      const res = await fetch('/api/usuarios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nombre: formNombre.trim(),
           email: formEmail.trim(),
           password: formPassword,
+          rol: 'cadete',
         }),
       })
 
@@ -103,7 +104,7 @@ export default function CadetesPage() {
       return
 
     try {
-      const res = await fetch(`/api/cadetes?id=${cadete.id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/usuarios/${cadete.id}`, { method: 'DELETE' })
       const data = await res.json()
 
       if (!res.ok) {
@@ -111,7 +112,7 @@ export default function CadetesPage() {
         return
       }
 
-      toast.success(`${cadete.nombre} desactivado`)
+      toast.success(`${cadete.nombre} eliminado`)
       fetchCadetes()
     } catch {
       toast.error('Error de conexión al desactivar el cadete')
