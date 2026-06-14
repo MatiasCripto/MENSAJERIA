@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -14,11 +14,11 @@ export async function proxy(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           )
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           )
         },
       },
@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
   // Use getSession() instead of getUser() for optimistic checks.
   // getUser() makes an external API call to validate the access token,
   // which can fail on Vercel Edge Runtime. getSession() reads the
-  // session from cookies locally — faster and more reliable for a proxy.
+  // session from cookies locally — faster and more reliable.
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -46,7 +46,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Read role from user_metadata (set during user creation via admin API)
-  // so we don't need to query the usuarios table from the proxy
+  // so we don't need to query the usuarios table from the middleware
   const rol = session.user.user_metadata?.rol as string | undefined
 
   // Operador routes
