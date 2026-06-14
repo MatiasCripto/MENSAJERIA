@@ -9,6 +9,22 @@ export function useCadetePosition(cadeteId: string | undefined) {
   const positionRef = useRef<GeolocationPosition | null>(null)
   const supabase = createClient()
 
+  // Get the cadete's currently active pedido (first one found)
+  const getActivePedidoId = useCallback(async (): Promise<string | null> => {
+    if (!cadeteId) return null
+
+    const { data } = await supabase
+      .from('pedidos')
+      .select('id')
+      .eq('cadete_id', cadeteId)
+      .in('estado', ['asignado', 'en_retiro', 'en_camino'])
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    return data?.id ?? null
+  }, [cadeteId, supabase])
+
   const sendPosition = useCallback(async () => {
     const pos = positionRef.current
     if (!pos || !cadeteId) return
@@ -20,65 +36,54 @@ export function useCadetePosition(cadeteId: string | undefined) {
       timestamp: new Date().toISOString(),
     }
 
-    console.log('[CADETE GPS] Enviando payload:', JSON.stringify(payload, null, 2))
-    console.log('[CADETE GPS] coords:', {
-      accuracy: pos.coords.accuracy,
-      altitude: pos.coords.altitude,
-      speed: pos.coords.speed,
-    })
-
-    const { data, error } = await supabase
+    // 1. Upsert latest position (keeps ubicaciones_cadete up to date)
+    const { error: upsertError } = await supabase
       .from('ubicaciones_cadete')
       .upsert(payload, { onConflict: 'cadete_id' })
 
-    if (error) {
-      console.error('[CADETE GPS] ERROR:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-      })
-    } else {
-      console.log('[CADETE GPS] OK:', data)
+    if (upsertError) {
+      console.error('[CADETE GPS] upsert error:', upsertError.message)
     }
-  }, [cadeteId, supabase])
+
+    // 2. Also insert into recorridos for history tracking
+    const pedidoId = await getActivePedidoId()
+
+    const { error: insertError } = await supabase.from('recorridos').insert({
+      cadete_id: cadeteId,
+      pedido_id: pedidoId,
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      timestamp: payload.timestamp,
+    })
+
+    if (insertError) {
+      console.error('[CADETE GPS] recorridos insert error:', insertError.message)
+    }
+  }, [cadeteId, supabase, getActivePedidoId])
 
   useEffect(() => {
     if (!cadeteId || !navigator.geolocation) {
-      console.warn('[CADETE GPS] GPS no disponible')
       return
     }
-
-    console.log('[CADETE GPS] Iniciando watchPosition + intervalo 15s')
 
     watchRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         positionRef.current = pos
       },
       (err) => {
-        console.error('[CADETE GPS] watchPosition error:', {
-          code: err.code,
-          message: err.message,
-          PERMISSION_DENIED: err.PERMISSION_DENIED,
-          POSITION_UNAVAILABLE: err.POSITION_UNAVAILABLE,
-          TIMEOUT: err.TIMEOUT,
-        })
+        console.error('[CADETE GPS] watchPosition error:', err.message)
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 5000,
-      }
+      },
     )
 
-    // Send position every 15 seconds
     intervalRef.current = setInterval(sendPosition, 15000)
-
-    // Also send immediately on start
     sendPosition()
 
     return () => {
-      console.log('[CADETE GPS] Limpiando watcher/interval')
       if (watchRef.current !== null) {
         navigator.geolocation.clearWatch(watchRef.current)
       }

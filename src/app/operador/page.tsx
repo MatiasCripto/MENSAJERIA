@@ -30,6 +30,65 @@ type Stats = {
   entregado: number
 }
 
+type CadeteStats = {
+  id: string
+  nombre: string
+  entregados: number
+  kmRecorridos: number
+  tiempoParadas: number
+  ultimoMovimiento: string | null
+}
+
+function toRad(deg: number) {
+  return (deg * Math.PI) / 180
+}
+
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function detectarParadas(puntos: Array<{ lat: number; lng: number; timestamp: string }>): number {
+  if (puntos.length < 2) return 0
+  let totalMin = 0
+  let enParada = false
+  let inicioParada = ''
+
+  for (let i = 1; i < puntos.length; i++) {
+    const p = puntos[i]
+    const ant = puntos[i - 1]
+    const dist = haversineDistance(ant.lat, ant.lng, p.lat, p.lng)
+    const tiempoMs = new Date(p.timestamp).getTime() - new Date(ant.timestamp).getTime()
+    const tiempoMin = tiempoMs / 60000
+
+    if (dist < 50 && tiempoMin > 2) {
+      if (!enParada) {
+        enParada = true
+        inicioParada = ant.timestamp
+      }
+    } else if (enParada) {
+      const duracion = (new Date(p.timestamp).getTime() - new Date(inicioParada).getTime()) / 60000
+      if (duracion >= 1) totalMin += duracion
+      enParada = false
+    }
+  }
+
+  return Math.round(totalMin)
+}
+
+function calcularKm(puntos: Array<{ lat: number; lng: number }>): number {
+  let total = 0
+  for (let i = 1; i < puntos.length; i++) {
+    total += haversineDistance(puntos[i - 1].lat, puntos[i - 1].lng, puntos[i].lat, puntos[i].lng)
+  }
+  return Math.round((total / 1000) * 100) / 100
+}
+
 export default function OperadorDashboard() {
   const { user, loading, isOperador } = useSession()
   const router = useRouter()
@@ -41,6 +100,7 @@ export default function OperadorDashboard() {
     en_camino: 0,
     entregado: 0,
   })
+  const [cadeteStats, setCadeteStats] = useState<CadeteStats[]>([])
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -79,6 +139,65 @@ export default function OperadorDashboard() {
         ).length,
         entregado: all.filter((p) => p.estado === 'entregado').length,
       })
+      // Fetch cadete day stats from recorridos
+      const { data: cadetesActivos } = await supabase
+        .from('usuarios')
+        .select('id, nombre')
+        .eq('rol', 'cadete')
+        .eq('activo', true)
+
+      const hoy = new Date()
+      hoy.setHours(0, 0, 0, 0)
+
+      // Get today's recorridos for all cadetes
+      const { data: recorridosHoy } = await supabase
+        .from('recorridos')
+        .select('cadete_id, lat, lng, timestamp')
+        .gte('timestamp', hoy.toISOString())
+
+      // Get today's delivered pedidos per cadete
+      const { data: entregadosHoy } = await supabase
+        .from('pedidos')
+        .select('cadete_id')
+        .eq('estado', 'entregado')
+        .gte('updated_at', hoy.toISOString())
+
+      const entregadosPorCadete: Record<string, number> = {}
+      if (entregadosHoy) {
+        for (const p of entregadosHoy) {
+          if (p.cadete_id) {
+            entregadosPorCadete[p.cadete_id] = (entregadosPorCadete[p.cadete_id] ?? 0) + 1
+          }
+        }
+      }
+
+      // Build cadete stats
+      const statsList: CadeteStats[] = []
+      const recorridosPorCadete: Record<string, Array<{ lat: number; lng: number; timestamp: string }>> = {}
+      if (recorridosHoy) {
+        for (const r of recorridosHoy) {
+          if (!recorridosPorCadete[r.cadete_id]) recorridosPorCadete[r.cadete_id] = []
+          recorridosPorCadete[r.cadete_id]!.push(r)
+        }
+      }
+
+      if (cadetesActivos) {
+        for (const c of cadetesActivos) {
+          const puntos = recorridosPorCadete[c.id] ?? []
+          const ultimo = puntos.length > 0 ? puntos[puntos.length - 1] : null
+
+          statsList.push({
+            id: c.id,
+            nombre: c.nombre,
+            entregados: entregadosPorCadete[c.id] ?? 0,
+            kmRecorridos: calcularKm(puntos),
+            tiempoParadas: detectarParadas(puntos),
+            ultimoMovimiento: ultimo?.timestamp ?? null,
+          })
+        }
+      }
+
+      setCadeteStats(statsList)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar datos')
     } finally {
@@ -268,6 +387,45 @@ export default function OperadorDashboard() {
           </div>
         )}
       </Card>
+
+      {/* Cadetes hoy */}
+      {cadeteStats.length > 0 && (
+        <Card title="Cadetes hoy">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Cadete</th>
+                  <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Entregados</th>
+                  <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Km</th>
+                  <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Paradas</th>
+                  <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Último movimiento</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {cadeteStats.map((c) => (
+                  <tr key={c.id} className="hover:bg-gray-50">
+                    <td className="whitespace-nowrap px-3 py-3 text-sm font-medium text-gray-900">{c.nombre}</td>
+                    <td className="whitespace-nowrap px-3 py-3 text-right text-sm text-gray-700">{c.entregados}</td>
+                    <td className="whitespace-nowrap px-3 py-3 text-right text-sm text-gray-700">{c.kmRecorridos} km</td>
+                    <td className="whitespace-nowrap px-3 py-3 text-right text-sm text-gray-700">{c.tiempoParadas} min</td>
+                    <td className="whitespace-nowrap px-3 py-3 text-right text-sm text-gray-500">
+                      {c.ultimoMovimiento
+                        ? formatDate(c.ultimoMovimiento)
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {cadeteStats.length === 0 && (
+            <p className="py-4 text-center text-sm text-gray-400">
+              No hay datos de cadetes para hoy
+            </p>
+          )}
+        </Card>
+      )}
     </div>
   )
 }

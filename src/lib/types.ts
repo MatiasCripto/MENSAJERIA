@@ -89,6 +89,35 @@ export interface UbicacionCadete {
 }
 
 // =============================================================
+// TABLE: recorridos (GPS track history)
+// =============================================================
+export interface Recorrido {
+  id: string
+  cadete_id: string
+  pedido_id: string | null
+  lat: number
+  lng: number
+  timestamp: string
+}
+
+export interface Parada {
+  lat: number
+  lng: number
+  inicio: Date
+  fin: Date
+  duracionMinutos: number
+}
+
+export interface CadeteResumenDiario {
+  cadete_id: string
+  cadete_nombre: string
+  entregados: number
+  km_recorridos: number
+  tiempoParadasMinutos: number
+  ultimoMovimiento: string | null
+}
+
+// =============================================================
 // Payload from get_pedido_by_token RPC
 // =============================================================
 export interface TrackingData {

@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/operador/pedidos', label: 'Pedidos', icon: '📦' },
   { href: '/operador/cadetes', label: 'Cadetes', icon: '👤' },
   { href: '/operador/reportes', label: 'Reportes', icon: '📈' },
+  { href: '/operador/recorridos', label: 'Recorridos', icon: '📍' },
   { href: '/operador/mapa', label: 'Mapa', icon: '🗺️' },
 ]
 
