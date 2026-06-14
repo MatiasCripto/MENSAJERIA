@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { DireccionAutocomplete } from '@/components/shared/DireccionAutocomplete'
 import { generarPalabraClave } from '@/lib/utils/format'
 import { Select } from '@/components/ui/Select'
 import { toast } from 'sonner'
@@ -186,7 +187,7 @@ export default function NuevoPedidoPage() {
           {/* Retiro */}
           <Card title="Dirección de retiro">
             <div className="space-y-4">
-              <Input
+              <DireccionAutocomplete
                 label="Dirección *"
                 name="retiro_direccion"
                 placeholder="Av. Ejemplo 1234"
@@ -216,7 +217,7 @@ export default function NuevoPedidoPage() {
           {/* Entrega */}
           <Card title="Dirección de entrega">
             <div className="space-y-4">
-              <Input
+              <DireccionAutocomplete
                 label="Dirección *"
                 name="entrega_direccion"
                 placeholder="Av. Destino 5678"
