@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
           supabaseResponse = NextResponse.next({ request })
@@ -22,35 +22,36 @@ export async function middleware(request: NextRequest) {
           )
         },
       },
-    }
+    },
   )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
 
-  // Public routes
+  // Public routes — no auth needed
   if (path === '/login' || path.startsWith('/seguimiento/')) {
     return supabaseResponse
   }
 
-  // Protected routes
-  if (!user) {
+  // Use getSession() instead of getUser() for optimistic checks.
+  // getUser() makes an external API call to validate the access token,
+  // which can fail on Vercel Edge Runtime. getSession() reads the
+  // session from cookies locally — faster and more reliable for a proxy.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  // Redirect unauthenticated users to login
+  if (!session?.user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Get user role
-  const { data: usuario } = await supabase
-    .from('usuarios')
-    .select('rol')
-    .eq('email', user.email)
-    .single()
+  // Read role from user_metadata (set during user creation via admin API)
+  // so we don't need to query the usuarios table from the proxy
+  const rol = session.user.user_metadata?.rol as string | undefined
 
   // Operador routes
   if (path.startsWith('/operador')) {
-    if (usuario?.rol !== 'operador') {
+    if (rol !== 'operador') {
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return supabaseResponse
@@ -58,7 +59,7 @@ export async function middleware(request: NextRequest) {
 
   // Cadete routes
   if (path.startsWith('/cadete')) {
-    if (usuario?.rol !== 'cadete') {
+    if (rol !== 'cadete') {
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return supabaseResponse
@@ -66,16 +67,23 @@ export async function middleware(request: NextRequest) {
 
   // Root: redirect authenticated users to their dashboard
   if (path === '/') {
-    if (usuario?.rol === 'operador') {
+    if (rol === 'operador') {
       return NextResponse.redirect(new URL('/operador', request.url))
     }
-    if (usuario?.rol === 'cadete') {
+    if (rol === 'cadete') {
       return NextResponse.redirect(new URL('/cadete', request.url))
     }
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  return supabaseResponse
+  // Unknown authenticated route — redirect to dashboard based on role
+  if (rol === 'operador') {
+    return NextResponse.redirect(new URL('/operador', request.url))
+  }
+  if (rol === 'cadete') {
+    return NextResponse.redirect(new URL('/cadete', request.url))
+  }
+  return NextResponse.redirect(new URL('/login', request.url))
 }
 
 export const config = {
