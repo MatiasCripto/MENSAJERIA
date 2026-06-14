@@ -160,9 +160,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        <p className="mt-4 text-center text-xs text-gray-400">
-          Usuarios de prueba: operador@test.com / cadete@test.com
-        </p>
       </div>
     </div>
   )
