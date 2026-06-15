@@ -110,6 +110,7 @@ export default function RecorridosPage() {
   const [cadeteId, setCadeteId] = useState('')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
   const [puntos, setPuntos] = useState<Recorrido[]>([])
+  const [selectedParadaIndex, setSelectedParadaIndex] = useState<number | null>(null)
   const [fetching, setFetching] = useState(false)
 
   useEffect(() => {
@@ -238,7 +239,11 @@ export default function RecorridosPage() {
           {/* Map + Stops */}
           <div className="flex flex-col gap-4 lg:flex-row">
             <div className="flex-1">
-              <RecorridosMap puntos={puntos} paradas={paradas} />
+              <RecorridosMap
+                puntos={puntos}
+                paradas={paradas}
+                selectedParadaIndex={selectedParadaIndex}
+              />
             </div>
 
             {/* Stops panel */}
@@ -247,9 +252,15 @@ export default function RecorridosPage() {
                 <Card title={`Paradas (${paradas.length})`}>
                   <div className="max-h-96 space-y-2 overflow-y-auto">
                     {paradas.map((p, i) => (
-                      <div
+                      <button
                         key={i}
-                        className="rounded-lg border border-orange-100 bg-orange-50 p-3"
+                        type="button"
+                        onClick={() => setSelectedParadaIndex(i)}
+                        className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                          selectedParadaIndex === i
+                            ? 'border-red-500 bg-red-50 ring-1 ring-red-400 dark:border-red-600 dark:bg-red-950/30'
+                            : 'border-orange-100 bg-orange-50 hover:border-orange-300 dark:border-orange-900/50 dark:bg-orange-950/20'
+                        }`}
                       >
                         <div className="flex items-center gap-2 text-sm font-medium text-orange-800">
                           <span>⏱</span>
@@ -275,7 +286,7 @@ export default function RecorridosPage() {
                             {p.lat.toFixed(4)}, {p.lng.toFixed(4)}
                           </p>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </Card>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Recorrido, Parada } from '@/lib/types'
@@ -52,11 +52,14 @@ function createWaypointIcon(): L.DivIcon {
 interface Props {
   puntos: Recorrido[]
   paradas: Parada[]
+  selectedParadaIndex?: number | null
 }
 
-export default function RecorridosMap({ puntos, paradas }: Props) {
+export default function RecorridosMap({ puntos, paradas, selectedParadaIndex }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
+  const paradaMarkersRef = useRef<L.Marker[]>([])
+  const prevSelectedRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -122,19 +125,47 @@ export default function RecorridosMap({ puntos, paradas }: Props) {
     }
 
     // Stop markers (orange clock)
-    paradas.forEach((parada) => {
-      L.marker([parada.lat, parada.lng], { icon: createStopIcon() })
+    paradaMarkersRef.current = paradas.map((parada, i) => {
+      const inicioStr = parada.inicio.toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      const finStr = parada.fin.toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      const marker = L.marker([parada.lat, parada.lng], { icon: createStopIcon() })
         .addTo(map)
-        .bindTooltip(`Detenido ${parada.duracionMinutos} min`, {
-          permanent: false,
-          direction: 'top',
-        })
+        .bindPopup(
+          `<div style="font-size:13px;line-height:1.5">
+            <strong>Parada #${i + 1}</strong><br/>
+            Inicio: ${inicioStr}<br/>
+            Fin: ${finStr}<br/>
+            Duración: ${parada.duracionMinutos} min
+          </div>`,
+          { closeButton: true, maxWidth: 240 },
+        )
+      return marker
     })
 
     // Fit bounds
     const bounds = L.latLngBounds(latlngs)
     map.fitBounds(bounds, { padding: [60, 60] })
   }, [puntos, paradas])
+
+  // Fly to selected parada
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || selectedParadaIndex == null) return
+    if (selectedParadaIndex < 0 || selectedParadaIndex >= paradaMarkersRef.current.length) return
+
+    const parada = paradas[selectedParadaIndex]
+    const marker = paradaMarkersRef.current[selectedParadaIndex]
+    if (!parada || !marker) return
+
+    map.setView([parada.lat, parada.lng], 17)
+    marker.openPopup()
+  }, [selectedParadaIndex, paradas])
 
   return (
     <div
