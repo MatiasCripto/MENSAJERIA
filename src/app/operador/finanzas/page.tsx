@@ -112,6 +112,7 @@ export default function FinanzasPage() {
 
   const [fetching, setFetching] = useState(false)
   const [fetched, setFetched] = useState(false)
+  const initialFetchDone = useRef(false)
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [generatingExcel, setGeneratingExcel] = useState(false)
 
@@ -149,7 +150,6 @@ export default function FinanzasPage() {
 
   const fetchData = useCallback(async () => {
     setFetching(true)
-    setFetched(false)
 
     let desde: string
     let hasta: string
@@ -394,19 +394,20 @@ export default function FinanzasPage() {
     }
   }, [periodo, fechaDesde, fechaHasta, cadeteFiltro, ccClienteFiltro, supabase])
 
-  // Auto-fetch on mount
+  // Auto-fetch on mount (one-time only via ref)
   useEffect(() => {
-    if (isOperador && !fetched) {
+    if (isOperador && !initialFetchDone.current) {
+      initialFetchDone.current = true
       fetchData()
     }
-  }, [isOperador, fetchData, fetched])
+  }, [isOperador, fetchData])
 
   // Re-fetch when CC client filter changes
   useEffect(() => {
-    if (isOperador && fetched) {
+    if (isOperador && initialFetchDone.current) {
       fetchData()
     }
-  }, [ccClienteFiltro, isOperador, fetchData, fetched])
+  }, [ccClienteFiltro, isOperador, fetchData])
 
   const getPeriodLabel = () => {
     if (periodo === 'personalizado') return `${fechaDesde || '?'} — ${fechaHasta || '?'}`
