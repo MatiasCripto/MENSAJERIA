@@ -28,9 +28,15 @@ type Cadete = {
   nombre: string
 }
 
+type ClienteOption = {
+  id: string
+  nombre: string
+}
+
 type Filters = {
   estado: string
   cadete: string
+  cliente: string
 }
 
 const ESTADO_OPTIONS = [
@@ -49,9 +55,10 @@ export default function PedidosPage() {
   const supabase = createClient()
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [cadetes, setCadetes] = useState<Cadete[]>([])
+  const [clientes, setClientes] = useState<ClienteOption[]>([])
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<Filters>({ estado: '', cadete: '' })
+  const [filters, setFilters] = useState<Filters>({ estado: '', cadete: '', cliente: '' })
 
   const fetchCadetes = useCallback(async () => {
     const { data } = await supabase
@@ -61,6 +68,15 @@ export default function PedidosPage() {
       .eq('activo', true)
 
     setCadetes(data ?? [])
+  }, [supabase])
+
+  const fetchClientes = useCallback(async () => {
+    const { data } = await supabase
+      .from('clientes')
+      .select('id, nombre')
+      .order('nombre')
+
+    setClientes(data ?? [])
   }, [supabase])
 
   const fetchPedidos = useCallback(async () => {
@@ -79,6 +95,10 @@ export default function PedidosPage() {
 
       if (filters.cadete) {
         query = query.eq('cadete_id', filters.cadete)
+      }
+
+      if (filters.cliente) {
+        query = query.eq('cliente_id', filters.cliente)
       }
 
       const { data, error: pedidosError } = await query
@@ -101,13 +121,19 @@ export default function PedidosPage() {
 
     if (!loading && isOperador) {
       fetchCadetes()
+      fetchClientes()
       fetchPedidos()
     }
-  }, [loading, isOperador, router, fetchCadetes, fetchPedidos])
+  }, [loading, isOperador, router, fetchCadetes, fetchClientes, fetchPedidos])
 
   const CADETE_OPTIONS = [
     { value: '', label: 'Todos los cadetes' },
     ...cadetes.map((c) => ({ value: c.id, label: c.nombre })),
+  ]
+
+  const CLIENTE_OPTIONS = [
+    { value: '', label: 'Todos los clientes' },
+    ...clientes.map((c) => ({ value: c.id, label: c.nombre })),
   ]
 
   if (loading) {
@@ -155,6 +181,16 @@ export default function PedidosPage() {
             }
           />
         </div>
+        <div className="w-full sm:w-56">
+          <Select
+            label="Cliente"
+            options={CLIENTE_OPTIONS}
+            value={filters.cliente}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, cliente: e.target.value }))
+            }
+          />
+        </div>
       </div>
 
       {/* Error state */}
@@ -190,7 +226,7 @@ export default function PedidosPage() {
                 No hay pedidos
               </p>
               <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">
-                {filters.estado || filters.cadete
+                {filters.estado || filters.cadete || filters.cliente
                   ? 'No se encontraron pedidos con los filtros seleccionados'
                   : 'Crea tu primer pedido para comenzar'}
               </p>
