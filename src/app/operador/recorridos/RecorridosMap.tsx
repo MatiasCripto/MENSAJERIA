@@ -43,7 +43,7 @@ function createEndIcon(): L.DivIcon {
 function createWaypointIcon(): L.DivIcon {
   return L.divIcon({
     className: '',
-    html: `<div style="width: 10px; height: 10px; background: #3b82f6; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.2);"></div>`,
+    html: `<div style="width: 10px; height: 10px; background: #dc2626; border: 2px solid white; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.2);"></div>`,
     iconSize: [10, 10],
     iconAnchor: [5, 5],
   })
@@ -91,7 +91,7 @@ export default function RecorridosMap({ puntos, paradas }: Props) {
 
     // Polyline
     L.polyline(latlngs, {
-      color: '#3b82f6',
+      color: '#dc2626',
       weight: 3,
       opacity: 0.8,
     }).addTo(map)

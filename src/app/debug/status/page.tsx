@@ -92,7 +92,7 @@ export default function DebugStatusPage() {
 
   const statusIcon = (status: StatusCheck['status']) => {
     switch (status) {
-      case 'loading': return <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+      case 'loading': return <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-primary" />
       case 'ok': return <span className="text-green-600 font-bold">✓</span>
       case 'error': return <span className="text-red-600 font-bold">✗</span>
     }
@@ -121,7 +121,7 @@ export default function DebugStatusPage() {
             <p className="text-xs text-gray-500">Error</p>
           </div>
           <div className="rounded-lg bg-white p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-blue-600">{loadingCount}</p>
+            <p className="text-2xl font-bold text-primary">{loadingCount}</p>
             <p className="text-xs text-gray-500">Verificando</p>
           </div>
         </div>

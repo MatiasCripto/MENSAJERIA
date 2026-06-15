@@ -167,7 +167,7 @@ export default function RecorridosPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -227,7 +227,7 @@ export default function RecorridosPage() {
             </Card>
             <Card>
               <p className="text-sm text-gray-500">Km recorridos</p>
-              <p className="mt-1 text-2xl font-bold text-blue-600">{kmRecorridos} km</p>
+              <p className="mt-1 text-2xl font-bold text-white">{kmRecorridos} km</p>
             </Card>
             <Card>
               <p className="text-sm text-gray-500">Tiempo detenido</p>

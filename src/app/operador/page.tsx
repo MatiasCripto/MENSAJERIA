@@ -290,7 +290,7 @@ export default function OperadorDashboard() {
   const statCards = [
     { label: 'Hoy', value: stats.total, color: 'text-gray-900' },
     { label: 'Pendientes', value: stats.pendiente, color: 'text-yellow-600' },
-    { label: 'En tránsito', value: stats.en_camino, color: 'text-blue-600' },
+    { label: 'En tránsito', value: stats.en_camino, color: 'text-white' },
     { label: 'Entregados', value: stats.entregado, color: 'text-green-600' },
   ]
 

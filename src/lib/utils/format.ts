@@ -18,9 +18,9 @@ export function formatTime(date: string | Date) {
 export function getEstadoColor(estado: string) {
   const colors: Record<string, string> = {
     pendiente: 'bg-yellow-100 text-yellow-800',
-    asignado: 'bg-blue-100 text-blue-800',
-    en_retiro: 'bg-indigo-100 text-indigo-800',
-    en_camino: 'bg-purple-100 text-purple-800',
+    asignado: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300',
+    en_retiro: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400',
+    en_camino: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-400',
     entregado: 'bg-green-100 text-green-800',
     fallido: 'bg-red-100 text-red-800',
   }

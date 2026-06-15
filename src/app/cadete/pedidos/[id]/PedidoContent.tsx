@@ -389,7 +389,7 @@ export default function PedidoContent() {
               </p>
               <a
                 href={`tel:${currentTelefono}`}
-                className="mt-0.5 block text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                className="mt-0.5 block text-sm font-medium text-primary hover:underline dark:text-red-400"
               >
                 {currentTelefono}
               </a>
@@ -658,7 +658,7 @@ export default function PedidoContent() {
                   accept="image/*"
                   capture="environment"
                   onChange={handlePhotoChange}
-                  className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 dark:text-zinc-400 dark:file:bg-red-950/50 dark:file:text-red-400 dark:hover:file:bg-red-900/50"
+                  className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-red-700 hover:file:bg-red-100 dark:text-zinc-400 dark:file:bg-red-950/50 dark:file:text-red-400 dark:hover:file:bg-red-900/50"
                 />
               </div>
             </>
@@ -676,7 +676,7 @@ export default function PedidoContent() {
                 accept="image/*"
                 capture="environment"
                 onChange={handlePhotoChange}
-                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 dark:text-zinc-400 dark:file:bg-red-950/50 dark:file:text-red-400 dark:hover:file:bg-red-900/50"
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-red-700 hover:file:bg-red-100 dark:text-zinc-400 dark:file:bg-red-950/50 dark:file:text-red-400 dark:hover:file:bg-red-900/50"
               />
               <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
                 Sacá una foto como comprobante
@@ -697,7 +697,7 @@ export default function PedidoContent() {
                   accept="image/*"
                   capture="environment"
                   onChange={handlePhotoChange}
-                  className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 dark:text-zinc-400 dark:file:bg-red-950/50 dark:file:text-red-400 dark:hover:file:bg-red-900/50"
+                  className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-red-700 hover:file:bg-red-100 dark:text-zinc-400 dark:file:bg-red-950/50 dark:file:text-red-400 dark:hover:file:bg-red-900/50"
                 />
               </div>
               <div>

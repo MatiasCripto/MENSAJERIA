@@ -255,7 +255,7 @@ export default function ReportesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -359,8 +359,8 @@ export default function ReportesPage() {
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-blue-50">
-                <tr className="font-semibold text-blue-900">
+              <tfoot className="bg-zinc-50 dark:bg-zinc-800">
+                <tr className="font-semibold text-zinc-900 dark:text-zinc-100">
                   <td className="px-4 py-3">TOTALES</td>
                   <td className="px-4 py-3 text-right">{totales.cantidad}</td>
                   <td className="px-4 py-3 text-right">${totales.total_importe.toFixed(2)}</td>

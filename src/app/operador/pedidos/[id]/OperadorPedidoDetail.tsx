@@ -406,13 +406,13 @@ export default function PedidoDetailPage() {
 
       {/* Tracking link */}
       {currentPedido.token_cliente && (
-        <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/30">
+        <div className="rounded-xl border-2 border-red-200 bg-red-50 p-4 shadow-sm dark:border-red-900/50 dark:bg-red-950/30">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+              <h2 className="text-sm font-semibold text-red-800 dark:text-red-300">
                 Link de seguimiento para el cliente
               </h2>
-              <p className="mt-1 break-all text-sm text-blue-700 select-all font-mono dark:text-blue-400">
+              <p className="mt-1 break-all text-sm text-red-700 select-all font-mono dark:text-red-400">
                 {window.location.origin}/seguimiento/{currentPedido.token_cliente}
               </p>
             </div>

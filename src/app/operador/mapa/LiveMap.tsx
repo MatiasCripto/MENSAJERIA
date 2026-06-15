@@ -25,7 +25,7 @@ L.Marker.prototype.options.icon = defaultIcon
 const cadeteIcon = L.divIcon({
   className: '',
   html: `<div style="
-    background-color: #3b82f6;
+    background-color: #dc2626;
     color: white;
     width: 36px;
     height: 36px;

@@ -110,7 +110,7 @@ export function DireccionAutocomplete({
             <li
               key={i}
               onClick={() => handleSelect(s)}
-              className="cursor-pointer px-3 py-2.5 text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 first:rounded-t-lg last:rounded-b-lg dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+              className="cursor-pointer px-3 py-2.5 text-sm text-gray-700 transition-colors hover:bg-zinc-50 hover:text-zinc-700 first:rounded-t-lg last:rounded-b-lg dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
             >
               {s.display_name}
             </li>

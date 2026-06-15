@@ -337,7 +337,7 @@ export default function NuevoPedidoPage() {
             </div>
             <div className="rounded-lg bg-white p-3 dark:bg-[#1a1a1a]">
               <p className="text-xs text-gray-500 dark:text-zinc-400">Link de seguimiento para el cliente</p>
-              <p className="mt-1 break-all text-sm font-mono text-blue-600 select-all dark:text-blue-400">
+              <p className="mt-1 break-all text-sm font-mono text-primary select-all dark:text-red-400">
                 {pedidoCreado.tracking_url}
               </p>
               <button
@@ -346,7 +346,7 @@ export default function NuevoPedidoPage() {
                   navigator.clipboard.writeText(pedidoCreado.tracking_url)
                   toast.success('Link copiado al portapapeles')
                 }}
-                className="mt-1 text-xs text-blue-500 hover:text-blue-700 underline dark:text-blue-400 dark:hover:text-blue-300"
+                className="mt-1 text-xs text-primary hover:text-primary-dark underline dark:text-red-400 dark:hover:text-red-300"
               >
                 Copiar link
               </button>
