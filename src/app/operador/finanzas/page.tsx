@@ -106,7 +106,9 @@ export default function FinanzasPage() {
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
   const [cadeteFiltro, setCadeteFiltro] = useState('')
+  const [ccClienteFiltro, setCcClienteFiltro] = useState('')
   const [cadetes, setCadetes] = useState<{ id: string; nombre: string }[]>([])
+  const [clientes, setClientes] = useState<{ id: string; nombre: string }[]>([])
 
   const [fetching, setFetching] = useState(false)
   const [fetched, setFetched] = useState(false)
@@ -134,6 +136,14 @@ export default function FinanzasPage() {
       .order('nombre')
       .then(({ data }) => {
         if (data) setCadetes(data)
+      })
+
+    supabase
+      .from('clientes')
+      .select('id, nombre')
+      .order('nombre')
+      .then(({ data }) => {
+        if (data) setClientes(data)
       })
   }, [isOperador, supabase])
 
@@ -179,14 +189,22 @@ export default function FinanzasPage() {
       if (errEsperas) throw errEsperas
 
       // ── 3. Cuenta corriente movimientos ──
+      // Date-filtered for the summary total
       const { data: movimientosCC, error: errCC } = await supabase
         .from('cuenta_corriente')
-        .select('*, clientes:clientes!cliente_id(nombre)')
+        .select('*')
         .gte('fecha', desde)
         .lte('fecha', hasta)
-        .order('fecha', { ascending: false })
 
       if (errCC) throw errCC
+
+      // All-time for per-client balances
+      const { data: movimientosCCAll, error: errCCAll } = await supabase
+        .from('cuenta_corriente')
+        .select('*, clientes:clientes!cliente_id(nombre)')
+        .order('fecha', { ascending: false })
+
+      if (errCCAll) throw errCCAll
 
       // ── 4. Pedidos with cobro ──
       const { data: cobrosData, error: errCobros } = await supabase
@@ -289,10 +307,11 @@ export default function FinanzasPage() {
         entry.pct_empresa = entry.total_viajes * 0.3
       }
 
-      // ── Per-client CC breakdown ──
+      // ── Per-client CC breakdown (all-time) ──
       const clientMap = new Map<string, ClienteCCResumen>()
-      for (const m of movimientosCC ?? []) {
+      for (const m of movimientosCCAll ?? []) {
         if (!m.cliente_id) continue
+        if (ccClienteFiltro && m.cliente_id !== ccClienteFiltro) continue
         let entry = clientMap.get(m.cliente_id)
         if (!entry) {
           entry = {
@@ -347,7 +366,7 @@ export default function FinanzasPage() {
     } finally {
       setFetching(false)
     }
-  }, [periodo, fechaDesde, fechaHasta, cadeteFiltro, supabase])
+  }, [periodo, fechaDesde, fechaHasta, cadeteFiltro, ccClienteFiltro, supabase])
 
   // Auto-fetch on mount
   useEffect(() => {
@@ -728,6 +747,17 @@ export default function FinanzasPage() {
 
           {/* ── Section 3: CC per client ── */}
           <Card title="Cuenta corriente por cliente">
+            <div className="mb-4 w-full sm:w-64">
+              <Select
+                label="Filtrar por cliente"
+                options={[
+                  { value: '', label: 'Todos los clientes' },
+                  ...clientes.map((c) => ({ value: c.id, label: c.nombre })),
+                ]}
+                value={ccClienteFiltro}
+                onChange={(e) => setCcClienteFiltro(e.target.value)}
+              />
+            </div>
             {porCliente.length === 0 ? (
               <p className="py-8 text-center text-sm text-gray-400">Sin movimientos en el período</p>
             ) : (
