@@ -206,7 +206,16 @@ export default function FinanzasPage() {
 
       if (errCCAll) throw errCCAll
 
-      // ── 4. Pedidos with cobro ──
+      // ── 4a. All-time CC pedidos (cargos from pedidos where forma_pago = cuenta_corriente) ──
+      const { data: pedidosCC, error: errPedidosCC } = await supabase
+        .from('pedidos')
+        .select('cliente_id, cliente_empresa, importe')
+        .eq('forma_pago', 'cuenta_corriente')
+        .not('cliente_id', 'is', null)
+
+      if (errPedidosCC) throw errPedidosCC
+
+      // ── 4b. Pedidos with cobro ──
       const { data: cobrosData, error: errCobros } = await supabase
         .from('pedidos')
         .select('*, cadetes:usuarios!cadete_id(nombre)')
@@ -307,27 +316,44 @@ export default function FinanzasPage() {
         entry.pct_empresa = entry.total_viajes * 0.3
       }
 
-      // ── Per-client CC breakdown (all-time) ──
+      // ── Per-client CC breakdown (all-time, from pedidos + pagos) ──
       const clientMap = new Map<string, ClienteCCResumen>()
+
+      // Cargos: from pedidos where forma_pago = cuenta_corriente
+      for (const p of pedidosCC ?? []) {
+        if (!p.cliente_id) continue
+        if (ccClienteFiltro && p.cliente_id !== ccClienteFiltro) continue
+        let entry = clientMap.get(p.cliente_id)
+        if (!entry) {
+          entry = {
+            cliente_id: p.cliente_id,
+            cliente_nombre: p.cliente_empresa ?? 'Desconocido',
+            total_cargado: 0,
+            total_pagado: 0,
+            saldo: 0,
+          }
+          clientMap.set(p.cliente_id, entry)
+        }
+        entry.total_cargado += Number(p.importe ?? 0)
+      }
+
+      // Pagos: from cuenta_corriente where tipo = pago
       for (const m of movimientosCCAll ?? []) {
-        if (!m.cliente_id) continue
+        if (!m.cliente_id || m.tipo !== 'pago') continue
         if (ccClienteFiltro && m.cliente_id !== ccClienteFiltro) continue
         let entry = clientMap.get(m.cliente_id)
         if (!entry) {
+          const name = (m.clientes as { nombre: string } | null)?.nombre ?? 'Desconocido'
           entry = {
             cliente_id: m.cliente_id,
-            cliente_nombre: (m.clientes as { nombre: string } | null)?.nombre ?? 'Desconocido',
+            cliente_nombre: name,
             total_cargado: 0,
             total_pagado: 0,
             saldo: 0,
           }
           clientMap.set(m.cliente_id, entry)
         }
-        if (m.tipo === 'cargo') {
-          entry.total_cargado += Number(m.monto ?? 0)
-        } else {
-          entry.total_pagado += Number(m.monto ?? 0)
-        }
+        entry.total_pagado += Number(m.monto ?? 0)
       }
       for (const entry of clientMap.values()) {
         entry.saldo = entry.total_cargado - entry.total_pagado
