@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
