@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -81,6 +81,30 @@ export default function FacturacionPage() {
   const configFetchedRef = useRef(false)
 
   // ── 5b. Invoice form ──
+  const [clientesList, setClientesList] = useState<{ id: string; nombre: string; cuit: string | null; direccion_habitual: string | null; razon_social: string | null }[]>([])
+  const [clienteSearch, setClienteSearch] = useState('')
+  const [clienteSearchOpen, setClienteSearchOpen] = useState(false)
+  const [clienteHighlightIndex, setClienteHighlightIndex] = useState(-1)
+  const clienteListRef = useRef<HTMLDivElement | null>(null)
+
+  const filteredClientes = useMemo(() => {
+    if (!clienteSearch.trim()) return clientesList
+    const q = clienteSearch.trim().toLowerCase()
+    return clientesList.filter(
+      (c) =>
+        c.nombre.toLowerCase().includes(q) ||
+        (c.razon_social && c.razon_social.toLowerCase().includes(q)),
+    )
+  }, [clientesList, clienteSearch])
+
+  const handleClienteSelect = (c: { nombre: string; cuit: string | null; direccion_habitual: string | null }) => {
+    setClienteNombre(c.nombre)
+    setClienteCuit(c.cuit ?? '')
+    setClienteDireccion(c.direccion_habitual ?? '')
+    setClienteSearch(c.nombre)
+    setClienteSearchOpen(false)
+    setClienteHighlightIndex(-1)
+  }
   const [clienteNombre, setClienteNombre] = useState('')
   const [clienteCuit, setClienteCuit] = useState('')
   const [clienteDireccion, setClienteDireccion] = useState('')
@@ -129,6 +153,18 @@ export default function FacturacionPage() {
           })
         }
         setConfigLoading(false)
+      })
+  }, [isOperador, supabase])
+
+  // ── Load clientes for search ──
+  useEffect(() => {
+    if (!isOperador) return
+    supabase
+      .from('clientes')
+      .select('id, nombre, cuit, direccion_habitual, razon_social')
+      .order('nombre', { ascending: true })
+      .then(({ data }) => {
+        if (data) setClientesList(data)
       })
   }, [isOperador, supabase])
 
@@ -697,6 +733,71 @@ export default function FacturacionPage() {
           ────────────────────────────────────────────── */}
       <Card title="Generar factura">
         <div className="space-y-4">
+          {/* Buscar cliente existente */}
+          <div className="relative">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+              Buscar cliente existente
+            </label>
+            <input
+              type="text"
+              value={clienteSearch}
+              onChange={(e) => {
+                setClienteSearch(e.target.value)
+                setClienteSearchOpen(true)
+                setClienteHighlightIndex(-1)
+              }}
+              onFocus={() => setClienteSearchOpen(true)}
+              onBlur={() => setTimeout(() => setClienteSearchOpen(false), 200)}
+              onKeyDown={(e) => {
+                if (!clienteSearchOpen || filteredClientes.length === 0) return
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  setClienteHighlightIndex((prev) =>
+                    prev < filteredClientes.length - 1 ? prev + 1 : 0,
+                  )
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  setClienteHighlightIndex((prev) =>
+                    prev > 0 ? prev - 1 : filteredClientes.length - 1,
+                  )
+                } else if (e.key === 'Enter' && clienteHighlightIndex >= 0) {
+                  e.preventDefault()
+                  handleClienteSelect(filteredClientes[clienteHighlightIndex])
+                } else if (e.key === 'Escape') {
+                  setClienteSearchOpen(false)
+                }
+              }}
+              placeholder="Escribí para buscar..."
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-zinc-500"
+            />
+            {clienteSearchOpen && filteredClientes.length > 0 && (
+              <div
+                ref={clienteListRef}
+                className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+              >
+                {filteredClientes.map((c, i) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                      i === clienteHighlightIndex
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-800'
+                    }`}
+                    onMouseDown={() => handleClienteSelect(c)}
+                  >
+                    <span className="font-medium">{c.nombre}</span>
+                    {c.cuit && (
+                      <span className="ml-2 text-xs text-gray-500 dark:text-zinc-400">
+                        {c.cuit}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Cliente fields */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Input

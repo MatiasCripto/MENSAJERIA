@@ -401,6 +401,13 @@ export default function FinanzasPage() {
     }
   }, [isOperador, fetchData, fetched])
 
+  // Re-fetch when CC client filter changes
+  useEffect(() => {
+    if (isOperador && fetched) {
+      fetchData()
+    }
+  }, [ccClienteFiltro, isOperador, fetchData, fetched])
+
   const getPeriodLabel = () => {
     if (periodo === 'personalizado') return `${fechaDesde || '?'} — ${fechaHasta || '?'}`
     return PERIODO_OPTIONS.find((o) => o.value === periodo)?.label ?? ''

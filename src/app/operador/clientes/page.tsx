@@ -14,6 +14,8 @@ type Cliente = {
   id: string
   nombre: string
   empresa: string | null
+  cuit: string | null
+  razon_social: string | null
   telefono: string | null
   direccion_habitual: string | null
   notas: string | null
@@ -27,6 +29,8 @@ type ModalMode = 'create' | 'edit' | null
 const INITIAL_FORM = {
   nombre: '',
   empresa: '',
+  cuit: '',
+  razon_social: '',
   telefono: '',
   direccion_habitual: '',
   notas: '',
@@ -99,6 +103,8 @@ export default function ClientesPage() {
     setForm({
       nombre: c.nombre,
       empresa: c.empresa ?? '',
+      cuit: c.cuit ?? '',
+      razon_social: c.razon_social ?? '',
       telefono: c.telefono ?? '',
       direccion_habitual: c.direccion_habitual ?? '',
       notas: c.notas ?? '',
@@ -126,6 +132,8 @@ export default function ClientesPage() {
         .insert({
           nombre: form.nombre.trim(),
           empresa: form.empresa.trim() || null,
+          cuit: form.cuit.trim() || null,
+          razon_social: form.razon_social.trim() || null,
           telefono: form.telefono.trim() || null,
           direccion_habitual: form.direccion_habitual.trim() || null,
           notas: form.notas.trim() || null,
@@ -160,6 +168,8 @@ export default function ClientesPage() {
         .update({
           nombre: form.nombre.trim(),
           empresa: form.empresa.trim() || null,
+          cuit: form.cuit.trim() || null,
+          razon_social: form.razon_social.trim() || null,
           telefono: form.telefono.trim() || null,
           direccion_habitual: form.direccion_habitual.trim() || null,
           notas: form.notas.trim() || null,
@@ -270,6 +280,9 @@ export default function ClientesPage() {
                     Nombre / Empresa
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
+                    CUIT
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                     Dirección
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
@@ -289,6 +302,9 @@ export default function ClientesPage() {
                   >
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                       {c.nombre}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">
+                      {c.cuit ?? '-'}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-zinc-400">
                       {c.direccion_habitual ?? '-'}
@@ -338,6 +354,18 @@ export default function ClientesPage() {
                 value={form.nombre}
                 onChange={(e) => setForm((prev) => ({ ...prev, nombre: e.target.value }))}
                 placeholder="Ej: Distribuidora Pepe o Juan García"
+              />
+              <Input
+                label="CUIT / CUIL"
+                value={form.cuit}
+                onChange={(e) => setForm((prev) => ({ ...prev, cuit: e.target.value }))}
+                placeholder="XX-XXXXXXXX-X"
+              />
+              <Input
+                label="Razón Social"
+                value={form.razon_social}
+                onChange={(e) => setForm((prev) => ({ ...prev, razon_social: e.target.value }))}
+                placeholder="Razón social"
               />
               <Input
                 label="Teléfono"
