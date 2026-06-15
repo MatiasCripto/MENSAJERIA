@@ -267,10 +267,7 @@ export default function ClientesPage() {
               <thead className="bg-gray-50 dark:bg-zinc-800/50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
-                    Nombre
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
-                    Empresa
+                    Nombre / Empresa
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                     Modalidad
@@ -295,9 +292,6 @@ export default function ClientesPage() {
                   >
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                       {c.nombre}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">
-                      {c.empresa ?? '-'}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm">
                       {c.modalidad_pago === 'cuenta_corriente' ? (
@@ -358,16 +352,10 @@ export default function ClientesPage() {
 
             <div className="space-y-4">
               <Input
-                label="Nombre *"
+                label="Nombre / Empresa *"
                 value={form.nombre}
                 onChange={(e) => setForm((prev) => ({ ...prev, nombre: e.target.value }))}
-                placeholder="Nombre del cliente"
-              />
-              <Input
-                label="Empresa"
-                value={form.empresa}
-                onChange={(e) => setForm((prev) => ({ ...prev, empresa: e.target.value }))}
-                placeholder="Nombre de la empresa"
+                placeholder="Ej: Distribuidora Pepe o Juan García"
               />
               <Input
                 label="Teléfono"
