@@ -2,12 +2,11 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { getEstadoColor, getEstadoLabel, formatDate } from '@/lib/utils/format'
-import Link from 'next/link'
+import PedidoDetalle from '@/components/cadete/PedidoDetalle'
 
 type Pedido = {
   id: string
@@ -35,7 +34,7 @@ export default function CadetePage() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const router = useRouter()
+  const [pedidoSeleccionado, setPedidoSeleccionado] = useState<Pedido | null>(null)
   const supabase = createClient()
 
   const fetchPedidos = useCallback(async () => {
@@ -78,6 +77,18 @@ export default function CadetePage() {
             <div className="h-4 w-36 rounded bg-gray-100 dark:bg-zinc-800" />
           </div>
         ))}
+      </div>
+    )
+  }
+
+  // Show pedido detail if one is selected (for Capacitor inline navigation)
+  if (pedidoSeleccionado) {
+    return (
+      <div className="p-4">
+        <PedidoDetalle
+          pedido={pedidoSeleccionado}
+          onVolver={() => setPedidoSeleccionado(null)}
+        />
       </div>
     )
   }
@@ -161,10 +172,10 @@ export default function CadetePage() {
               : pedido.entrega_telefono
 
           return (
-            <Link
+            <button
               key={pedido.id}
-              href={`/cadete/pedidos/${pedido.id}`}
-              className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md active:scale-[0.99] dark:border-zinc-800 dark:bg-[#1a1a1a]"
+              onClick={() => setPedidoSeleccionado(pedido)}
+              className="block w-full text-left rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md active:scale-[0.99] dark:border-zinc-800 dark:bg-[#1a1a1a]"
             >
               <div className="mb-2 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -188,7 +199,7 @@ export default function CadetePage() {
               <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
                 {formatDate(pedido.created_at)}
               </p>
-            </Link>
+            </button>
           )
         })}
       </div>

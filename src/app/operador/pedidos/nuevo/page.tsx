@@ -17,9 +17,10 @@ const FORMA_PAGO_OPTIONS = [
   { value: 'efectivo', label: 'Efectivo' },
   { value: 'mercadopago', label: 'MercadoPago' },
   { value: 'transferencia', label: 'Transferencia' },
+  { value: 'cuenta_corriente', label: 'Cuenta corriente' },
 ]
 
-type ClienteOption = { id: string; nombre: string }
+type ClienteOption = { id: string; nombre: string; direccion_habitual: string | null; modalidad_pago: string | null }
 type ContactoOption = { id: string; nombre: string; cargo: string | null; telefono: string | null }
 
 type FormData = {
@@ -73,6 +74,8 @@ export default function NuevoPedidoPage() {
   const [contactos, setContactos] = useState<ContactoOption[]>([])
   const [contactoOtro, setContactoOtro] = useState(false)
   const [contactoOtroNombre, setContactoOtroNombre] = useState('')
+  const [clienteSearch, setClienteSearch] = useState('')
+  const [clienteSearchOpen, setClienteSearchOpen] = useState(false)
 
   useEffect(() => {
     if (!loading && !isOperador) {
@@ -85,7 +88,7 @@ export default function NuevoPedidoPage() {
     if (!isOperador) return
     supabase
       .from('clientes')
-      .select('id, nombre')
+      .select('id, nombre, direccion_habitual, modalidad_pago')
       .order('nombre')
       .then(({ data }) => {
         if (data) setClientes(data)
@@ -116,11 +119,16 @@ export default function NuevoPedidoPage() {
 
   const handleClienteChange = useCallback((clienteId: string) => {
     const selected = clientes.find((c) => c.id === clienteId)
+    if (!selected) return
+    setClienteSearch(selected.nombre)
+    setClienteSearchOpen(false)
     setForm((prev) => ({
       ...prev,
       cliente_id: clienteId,
-      cliente_empresa: selected?.nombre ?? '',
+      cliente_empresa: selected.nombre,
       contacto_nombre: '',
+      retiro_direccion: prev.retiro_direccion || selected.direccion_habitual || '',
+      forma_pago: selected.modalidad_pago === 'cuenta_corriente' ? 'cuenta_corriente' : prev.forma_pago,
     }))
   }, [clientes])
 
@@ -175,6 +183,11 @@ export default function NuevoPedidoPage() {
     e.preventDefault()
 
     if (!validate()) return
+
+    if (form.forma_pago === 'cuenta_corriente' && !form.cliente_id) {
+      toast.error('Seleccioná un cliente para usar cuenta corriente')
+      return
+    }
 
     setSubmitting(true)
 
@@ -338,20 +351,109 @@ export default function NuevoPedidoPage() {
           {/* Facturación */}
           <Card title="Información de facturación (opcional)">
             <div className="space-y-4">
+              {/* Client search autocomplete */}
+              <div className="relative">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                  Buscar cliente
+                </label>
+                <input
+                  type="text"
+                  value={clienteSearch}
+                  onChange={(e) => {
+                    setClienteSearch(e.target.value)
+                    setClienteSearchOpen(true)
+                    if (!e.target.value) {
+                      setForm((prev) => ({
+                        ...prev,
+                        cliente_id: '',
+                        cliente_empresa: '',
+                        contacto_nombre: '',
+                      }))
+                    }
+                  }}
+                  onFocus={() => clienteSearch.length >= 1 && setClienteSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setClienteSearchOpen(false), 200)}
+                  placeholder="Escribí para buscar..."
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-zinc-500"
+                />
+                {clienteSearchOpen && (
+                  <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-[#1a1a1a]">
+                    {clientes
+                      .filter((c) =>
+                        c.nombre.toLowerCase().includes(clienteSearch.toLowerCase()),
+                      )
+                      .map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onMouseDown={() => handleClienteChange(c.id)}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-800"
+                        >
+                          {c.nombre}
+                        </button>
+                      ))}
+                    {clientes.filter((c) =>
+                      c.nombre.toLowerCase().includes(clienteSearch.toLowerCase()),
+                    ).length === 0 && (
+                      <p className="px-3 py-2 text-sm text-gray-400">Sin resultados</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <Input
                 label="Cliente / Empresa"
                 name="cliente_empresa"
-                placeholder="Ej: Distribuidora Pepe"
+                placeholder="Ej: Distribuidora Pepe o Juan García"
                 value={form.cliente_empresa}
                 onChange={handleChange}
               />
-              <Input
-                label="Contacto / Quién llamó"
-                name="contacto_nombre"
-                placeholder="Nombre de quien llamó"
-                value={form.contacto_nombre}
-                onChange={handleChange}
-              />
+
+              {/* Contactos del cliente seleccionado */}
+              {form.cliente_id && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    Contacto habitual
+                  </label>
+                  {contactos.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      {contactos.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => handleContactoSelect(c)}
+                          className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                            form.contacto_nombre === c.nombre
+                              ? 'border-primary bg-primary/10 text-primary dark:border-red-500 dark:bg-red-950/30 dark:text-red-400'
+                              : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                          }`}
+                        >
+                          {c.nombre}
+                          {c.cargo && <span className="ml-1 text-gray-400">({c.cargo})</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!contactoOtro ? (
+                    <button
+                      type="button"
+                      onClick={handleContactoOtro}
+                      className="text-xs text-primary hover:underline dark:text-red-400"
+                    >
+                      {contactos.length > 0 ? 'Otro contacto...' : 'Agregar contacto...'}
+                    </button>
+                  ) : (
+                    <input
+                      type="text"
+                      value={contactoOtroNombre}
+                      onChange={(e) => setContactoOtroNombre(e.target.value)}
+                      placeholder="Nombre de quien se comunicó"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white"
+                    />
+                  )}
+                </div>
+              )}
+
               <Input
                 label="Hora de salida"
                 name="hora_salida"
