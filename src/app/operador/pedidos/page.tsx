@@ -16,7 +16,9 @@ type Pedido = {
   palabra_clave: string
   estado: string
   retiro_direccion: string
+  retiro_contacto: string | null
   entrega_direccion: string
+  entrega_contacto: string | null
   created_at: string
   cadete_id: string | null
 }
@@ -220,6 +222,9 @@ export default function PedidosPage() {
                       Retiro
                     </th>
                     <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400 md:table-cell">
+                      Destinatario
+                    </th>
+                    <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400 md:table-cell">
                       Entrega
                     </th>
                     <th className="hidden px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400 lg:table-cell">
@@ -259,6 +264,9 @@ export default function PedidosPage() {
                       </td>
                       <td className="hidden max-w-[200px] truncate px-3 py-3 text-sm text-gray-500 dark:text-zinc-400 md:table-cell">
                         {pedido.retiro_direccion}
+                      </td>
+                      <td className="hidden max-w-[200px] truncate px-3 py-3 text-sm text-gray-700 dark:text-zinc-300 md:table-cell">
+                        {pedido.entrega_contacto || '-'}
                       </td>
                       <td className="hidden max-w-[200px] truncate px-3 py-3 text-sm text-gray-500 dark:text-zinc-400 md:table-cell">
                         {pedido.entrega_direccion}
