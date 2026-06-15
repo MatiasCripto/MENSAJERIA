@@ -20,7 +20,7 @@ const FORMA_PAGO_OPTIONS = [
   { value: 'cuenta_corriente', label: 'Cuenta corriente' },
 ]
 
-type ClienteOption = { id: string; nombre: string; direccion_habitual: string | null; modalidad_pago: string | null }
+type ClienteOption = { id: string; nombre: string; telefono: string | null; direccion_habitual: string | null; modalidad_pago: string | null }
 type ContactoOption = { id: string; nombre: string; cargo: string | null; telefono: string | null }
 
 type FormData = {
@@ -88,7 +88,7 @@ export default function NuevoPedidoPage() {
     if (!isOperador) return
     supabase
       .from('clientes')
-      .select('id, nombre, direccion_habitual, modalidad_pago')
+      .select('id, nombre, telefono, direccion_habitual, modalidad_pago')
       .order('nombre')
       .then(({ data }) => {
         if (data) setClientes(data)
@@ -128,6 +128,7 @@ export default function NuevoPedidoPage() {
       cliente_empresa: selected.nombre,
       contacto_nombre: '',
       retiro_direccion: prev.retiro_direccion || selected.direccion_habitual || '',
+      retiro_telefono: prev.retiro_telefono || selected.telefono || '',
       forma_pago: selected.modalidad_pago === 'cuenta_corriente' ? 'cuenta_corriente' : prev.forma_pago,
     }))
   }, [clientes])
@@ -135,8 +136,12 @@ export default function NuevoPedidoPage() {
   const handleContactoSelect = useCallback((contacto: ContactoOption) => {
     setContactoOtro(false)
     setContactoOtroNombre('')
-    setForm((prev) => ({ ...prev, contacto_nombre: contacto.nombre }))
-  }, [])
+    setForm((prev) => {
+      const cliente = clientes.find((c) => c.id === prev.cliente_id)
+      const telefono = contacto.telefono || cliente?.telefono || ''
+      return { ...prev, contacto_nombre: contacto.nombre, retiro_telefono: prev.retiro_telefono || telefono }
+    })
+  }, [clientes])
 
   const handleContactoOtro = useCallback(() => {
     setContactoOtro(true)
@@ -276,78 +281,6 @@ export default function NuevoPedidoPage() {
 
       <form onSubmit={handleSubmit}>
         <div className="space-y-6">
-          {/* Retiro */}
-          <Card title="Dirección de retiro">
-            <div className="space-y-4">
-              <DireccionAutocomplete
-                label="Dirección *"
-                name="retiro_direccion"
-                placeholder="Av. Ejemplo 1234"
-                value={form.retiro_direccion}
-                onChange={handleChange}
-                error={errors.retiro_direccion}
-              />
-              <Input
-                label="Contacto *"
-                name="retiro_contacto"
-                placeholder="Nombre del remitente"
-                value={form.retiro_contacto}
-                onChange={handleChange}
-                error={errors.retiro_contacto}
-              />
-              <Input
-                label="Teléfono *"
-                name="retiro_telefono"
-                placeholder="11 1234-5678"
-                value={form.retiro_telefono}
-                onChange={handleChange}
-                error={errors.retiro_telefono}
-              />
-            </div>
-          </Card>
-
-          {/* Entrega */}
-          <Card title="Dirección de entrega">
-            <div className="space-y-4">
-              <DireccionAutocomplete
-                label="Dirección *"
-                name="entrega_direccion"
-                placeholder="Av. Destino 5678"
-                value={form.entrega_direccion}
-                onChange={handleChange}
-                error={errors.entrega_direccion}
-              />
-              <Input
-                label="Contacto *"
-                name="entrega_contacto"
-                placeholder="Nombre del destinatario"
-                value={form.entrega_contacto}
-                onChange={handleChange}
-                error={errors.entrega_contacto}
-              />
-              <Input
-                label="Teléfono *"
-                name="entrega_telefono"
-                placeholder="11 8765-4321"
-                value={form.entrega_telefono}
-                onChange={handleChange}
-                error={errors.entrega_telefono}
-              />
-            </div>
-          </Card>
-
-          {/* Notas */}
-          <Card title="Notas (opcional)">
-            <textarea
-              name="notas"
-              rows={3}
-              placeholder="Instrucciones adicionales para el cadete..."
-              value={form.notas}
-              onChange={handleChange}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-zinc-500"
-            />
-          </Card>
-
           {/* Facturación */}
           <Card title="Información de facturación (opcional)">
             <div className="space-y-4">
@@ -480,6 +413,78 @@ export default function NuevoPedidoPage() {
                 }
               />
             </div>
+          </Card>
+
+          {/* Retiro */}
+          <Card title="Dirección de retiro">
+            <div className="space-y-4">
+              <DireccionAutocomplete
+                label="Dirección *"
+                name="retiro_direccion"
+                placeholder="Av. Ejemplo 1234"
+                value={form.retiro_direccion}
+                onChange={handleChange}
+                error={errors.retiro_direccion}
+              />
+              <Input
+                label="Contacto *"
+                name="retiro_contacto"
+                placeholder="Nombre del remitente"
+                value={form.retiro_contacto}
+                onChange={handleChange}
+                error={errors.retiro_contacto}
+              />
+              <Input
+                label="Teléfono *"
+                name="retiro_telefono"
+                placeholder="11 1234-5678"
+                value={form.retiro_telefono}
+                onChange={handleChange}
+                error={errors.retiro_telefono}
+              />
+            </div>
+          </Card>
+
+          {/* Entrega */}
+          <Card title="Dirección de entrega">
+            <div className="space-y-4">
+              <DireccionAutocomplete
+                label="Dirección *"
+                name="entrega_direccion"
+                placeholder="Av. Destino 5678"
+                value={form.entrega_direccion}
+                onChange={handleChange}
+                error={errors.entrega_direccion}
+              />
+              <Input
+                label="Contacto *"
+                name="entrega_contacto"
+                placeholder="Nombre del destinatario"
+                value={form.entrega_contacto}
+                onChange={handleChange}
+                error={errors.entrega_contacto}
+              />
+              <Input
+                label="Teléfono *"
+                name="entrega_telefono"
+                placeholder="11 8765-4321"
+                value={form.entrega_telefono}
+                onChange={handleChange}
+                error={errors.entrega_telefono}
+              />
+            </div>
+          </Card>
+
+          {/* Notas */}
+          <Card title="Notas (opcional)">
+            <textarea
+              name="notas"
+              rows={3}
+              placeholder="Instrucciones adicionales para el cadete..."
+              value={form.notas}
+              onChange={handleChange}
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-zinc-500"
+            />
           </Card>
 
           {/* Submit */}
