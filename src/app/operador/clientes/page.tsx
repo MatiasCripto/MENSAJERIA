@@ -270,9 +270,6 @@ export default function ClientesPage() {
                     Nombre / Empresa
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
-                    Modalidad
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                     Dirección
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
@@ -292,15 +289,6 @@ export default function ClientesPage() {
                   >
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                       {c.nombre}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm">
-                      {c.modalidad_pago === 'cuenta_corriente' ? (
-                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-400">
-                          Cuenta corriente
-                        </span>
-                      ) : (
-                        <span className="text-gray-500 dark:text-zinc-400">Contado</span>
-                      )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-zinc-400">
                       {c.direccion_habitual ?? '-'}
