@@ -295,7 +295,15 @@ export default function EquipoPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white dark:divide-zinc-800 dark:bg-[#1a1a1a]">
                 {filtered.map((u) => (
-                  <tr key={u.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800/50">
+                  <tr
+                    key={u.id}
+                    className={`transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${
+                      tab === 'cadetes' ? 'cursor-pointer' : ''
+                    }`}
+                    onClick={() => {
+                      if (tab === 'cadetes') router.push(`/operador/equipo/${u.id}`)
+                    }}
+                  >
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                       {u.nombre}
                     </td>
