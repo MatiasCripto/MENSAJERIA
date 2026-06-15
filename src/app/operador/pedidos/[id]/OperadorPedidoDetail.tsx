@@ -71,6 +71,8 @@ type IntentoEntrega = {
   tipo: string
   notas: string | null
   foto_url: string | null
+  receptor_nombre: string | null
+  receptor_dni: string | null
   created_at: string
 }
 
@@ -678,6 +680,20 @@ export default function PedidoDetailPage() {
                         <p className="text-sm text-gray-600 dark:text-zinc-300">
                           {intento.notas}
                         </p>
+                      )}
+                      {intento.tipo === 'entregado' && (
+                        <div className="mt-1 space-y-0.5">
+                          {intento.receptor_nombre && (
+                            <p className="text-sm text-gray-700 dark:text-zinc-300">
+                              <span className="font-medium">Receptor:</span> {intento.receptor_nombre}
+                            </p>
+                          )}
+                          {intento.receptor_dni && (
+                            <p className="text-sm text-gray-700 dark:text-zinc-300">
+                              <span className="font-medium">DNI:</span> {intento.receptor_dni}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

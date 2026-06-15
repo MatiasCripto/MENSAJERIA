@@ -273,7 +273,7 @@ export default function ClientesPage() {
                     Modalidad
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
-                    Saldo
+                    Dirección
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                     Teléfono
@@ -302,14 +302,8 @@ export default function ClientesPage() {
                         <span className="text-gray-500 dark:text-zinc-400">Contado</span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm">
-                      {c.saldo_deuda && c.saldo_deuda > 0 ? (
-                        <span className="font-semibold text-red-600 dark:text-red-400">
-                          ${Number(c.saldo_deuda).toFixed(2)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-500 dark:text-zinc-400">$0.00</span>
-                      )}
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-zinc-400">
+                      {c.direccion_habitual ?? '-'}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">
                       {c.telefono ?? '-'}
