@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
 import { Capacitor } from '@capacitor/core'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -11,7 +10,6 @@ import { toast } from 'sonner'
 
 export default function CadetePerfilPage() {
   const { user, loading } = useSession()
-  const router = useRouter()
   const supabase = createClient()
 
   const [currentPassword, setCurrentPassword] = useState('')
@@ -22,7 +20,7 @@ export default function CadetePerfilPage() {
 
   const redirectTo = (path: string) => {
     if (Capacitor.isNativePlatform()) {
-      router.replace(path)
+      window.location.href = '/#' + path
     } else {
       window.location.href = path
     }
@@ -36,9 +34,13 @@ export default function CadetePerfilPage() {
 
   useEffect(() => {
     if (!loading && (!user || user.rol !== 'cadete')) {
-      router.replace('/login')
+      if (Capacitor.isNativePlatform()) {
+        window.location.href = '/#/login'
+      } else {
+        window.location.href = '/login'
+      }
     }
-  }, [user, loading, router])
+  }, [user, loading])
 
   const handleChangePassword = async () => {
     if (!newPassword.trim()) {
