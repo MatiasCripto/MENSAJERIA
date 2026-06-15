@@ -4,6 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.mensajeria.cadete',
   appName: 'Moto Express Cadete',
   webDir: 'out',
+  server: {
+    androidScheme: 'https',
+    hostname: 'app',
+  },
   plugins: {
     Geolocation: {
       permissions: {
