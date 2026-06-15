@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { Capacitor } from '@capacitor/core'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 export default function LoginPage() {
@@ -14,7 +13,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const { user, loading: sessionLoading } = useSession()
-  const router = useRouter()
   const supabase = createClient()
 
   const redirectTo = (path: string) => {
