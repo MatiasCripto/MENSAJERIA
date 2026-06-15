@@ -15,6 +15,7 @@ const navLinks = [
   { href: '/operador/cadetes', label: 'Cadetes', icon: '👤' },
   { href: '/operador/clientes', label: 'Clientes', icon: '👥' },
   { href: '/operador/facturacion', label: 'Facturación', icon: '💰' },
+  { href: '/operador/finanzas', label: 'Finanzas', icon: '💰' },
   { href: '/operador/reportes', label: 'Reportes', icon: '📈' },
   { href: '/operador/recorridos', label: 'Recorridos', icon: '📍' },
   { href: '/operador/mapa', label: 'Mapa', icon: '🗺️' },
