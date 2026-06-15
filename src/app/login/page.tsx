@@ -16,16 +16,9 @@ export default function LoginPage() {
   const supabase = createClient()
 
   const redirectTo = (path: string) => {
-    const isNative = Capacitor.isNativePlatform()
-    addLog(`redirectTo: isNativePlatform()=${isNative}, path="${path}"`)
-    if (isNative) {
-      // Forzar recarga completa en Capacitor
-      addLog(`redirectTo: haciendo window.location.replace('https://app${path}')`)
-      window.location.replace('https://app' + path)
-    } else {
-      addLog(`redirectTo: haciendo window.location.href = '${path}'`)
-      window.location.href = path
-    }
+    addLog(`redirectTo: isNativePlatform()=${Capacitor.isNativePlatform()}, path="${path}"`)
+    addLog(`redirectTo: haciendo window.location.href = '${path}'`)
+    window.location.href = path
   }
 
   const addLog = (msg: string) => {
