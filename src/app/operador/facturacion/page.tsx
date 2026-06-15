@@ -23,6 +23,10 @@ type EmpresaConfig = {
   telefono: string
   email: string
   logo_url: string
+  banco: string
+  cbu: string
+  alias: string
+  titular: string
 }
 
 type PedidoRow = {
@@ -41,6 +45,10 @@ const defaultConfig: EmpresaConfig = {
   telefono: '',
   email: '',
   logo_url: '',
+  banco: '',
+  cbu: '',
+  alias: '',
+  titular: '',
 }
 
 // ──────────────────────────────────────────────
@@ -114,6 +122,10 @@ export default function FacturacionPage() {
             telefono: row.telefono ?? '',
             email: row.email ?? '',
             logo_url: row.logo_url ?? '',
+            banco: row.banco ?? '',
+            cbu: row.cbu ?? '',
+            alias: row.alias ?? '',
+            titular: row.titular ?? '',
           })
         }
         setConfigLoading(false)
@@ -139,6 +151,10 @@ export default function FacturacionPage() {
             telefono: config.telefono,
             email: config.email,
             logo_url: config.logo_url,
+            banco: config.banco,
+            cbu: config.cbu,
+            alias: config.alias,
+            titular: config.titular,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing[0].id)
@@ -150,6 +166,10 @@ export default function FacturacionPage() {
           telefono: config.telefono,
           email: config.email,
           logo_url: config.logo_url,
+          banco: config.banco,
+          cbu: config.cbu,
+          alias: config.alias,
+          titular: config.titular,
         })
       }
 
@@ -178,7 +198,11 @@ export default function FacturacionPage() {
           .upload(fileName, file, { upsert: true })
 
         if (uploadError) {
-          toast.error('Error al subir el logo')
+          if (uploadError.message?.includes('bucket') || uploadError.message?.includes('not found')) {
+            toast.error('El bucket "logos" no existe. Crealo en Supabase → Storage')
+          } else {
+            toast.error('Error al subir el logo: ' + uploadError.message)
+          }
           console.error(uploadError)
           return
         }
@@ -490,13 +514,13 @@ export default function FacturacionPage() {
       doc.setFont('Helvetica', 'normal')
       doc.setFontSize(8)
       y += 5
-      doc.text('Banco: ---', margin, y)
+      doc.text(`Banco: ${config.banco || '---'}`, margin, y)
       y += 4
-      doc.text('CBU: ---', margin, y)
+      doc.text(`CBU: ${config.cbu || '---'}`, margin, y)
       y += 4
-      doc.text('Alias: ---', margin, y)
+      doc.text(`Alias: ${config.alias || '---'}`, margin, y)
       y += 4
-      doc.text('Titular: ---', margin, y)
+      doc.text(`Titular: ${config.titular || '---'}`, margin, y)
       y += 8
 
       // Signature line
@@ -615,6 +639,47 @@ export default function FacturacionPage() {
                 {uploadingLogo && (
                   <span className="text-sm text-gray-500">Subiendo...</span>
                 )}
+              </div>
+            </div>
+
+            {/* Datos de transferencia bancaria */}
+            <div className="border-t border-gray-200 pt-4 dark:border-zinc-700">
+              <p className="mb-3 text-sm font-semibold text-gray-800 dark:text-zinc-200">
+                Datos de transferencia bancaria
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input
+                  label="Banco"
+                  value={config.banco}
+                  onChange={(e) =>
+                    setConfig((prev) => ({ ...prev, banco: e.target.value }))
+                  }
+                  placeholder="Ej: Banco Nación"
+                />
+                <Input
+                  label="CBU"
+                  value={config.cbu}
+                  onChange={(e) =>
+                    setConfig((prev) => ({ ...prev, cbu: e.target.value }))
+                  }
+                  placeholder="Número de CBU"
+                />
+                <Input
+                  label="Alias"
+                  value={config.alias}
+                  onChange={(e) =>
+                    setConfig((prev) => ({ ...prev, alias: e.target.value }))
+                  }
+                  placeholder="Ej: moto.express.pago"
+                />
+                <Input
+                  label="Titular"
+                  value={config.titular}
+                  onChange={(e) =>
+                    setConfig((prev) => ({ ...prev, titular: e.target.value }))
+                  }
+                  placeholder="Nombre del titular"
+                />
               </div>
             </div>
 
