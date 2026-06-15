@@ -9,6 +9,8 @@ import { Card } from '@/components/ui/Card'
 import { getEstadoColor, getEstadoLabel, formatDate } from '@/lib/utils/format'
 import dynamic from 'next/dynamic'
 import { toast } from 'sonner'
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
+import { Capacitor } from '@capacitor/core'
 
 const MapWithNoSSR = dynamic(() => import('@/components/shared/Map'), {
   ssr: false,
@@ -49,6 +51,7 @@ export default function PedidoDetalle({ pedido: initialPedido, onVolver }: Props
   const [receptorDni, setReceptorDni] = useState('')
   const [notaFallo, setNotaFallo] = useState('')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -229,14 +232,38 @@ export default function PedidoDetalle({ pedido: initialPedido, onVolver }: Props
     setReceptorDni('')
     setNotaFallo('')
     setPhotoFile(null)
+    setPhotoDataUrl(null)
     setPhotoPreview(null)
     setShowForm(true)
   }
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSacarFoto = async () => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const photo = await Camera.getPhoto({
+          quality: 80,
+          allowEditing: false,
+          resultType: CameraResultType.DataUrl,
+          source: CameraSource.Camera,
+        })
+        if (photo.dataUrl) {
+          setPhotoDataUrl(photo.dataUrl)
+          setPhotoPreview(photo.dataUrl)
+          setPhotoFile(null)
+        }
+      } catch {
+        // User cancelled or error — ignore
+      }
+    } else {
+      fileInputRef.current?.click()
+    }
+  }
+
+  const handleWebFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setPhotoFile(file)
+    setPhotoDataUrl(null)
     const reader = new FileReader()
     reader.onload = (ev) => setPhotoPreview(ev.target?.result as string)
     reader.readAsDataURL(file)
@@ -255,8 +282,8 @@ export default function PedidoDetalle({ pedido: initialPedido, onVolver }: Props
       }
     }
 
-    if (formType !== 'entregado' && !photoFile) {
-      toast.error('Sacá una foto como comprobante')
+    if (formType !== 'entregado' && !photoFile && !photoDataUrl) {
+      toast.error('Debés sacar una foto como evidencia antes de continuar')
       return
     }
 
@@ -269,21 +296,34 @@ export default function PedidoDetalle({ pedido: initialPedido, onVolver }: Props
 
     // --- Upload photo ---
     let photoUrl: string | null = null
-    if (photoFile) {
-      const fileName = `${pedidoId}/${Date.now()}.jpg`
+    const uploadDataUrl = async (dataUrl: string) => {
+      const res = await fetch(dataUrl)
+      const blob = await res.blob()
+      const fileName = `intentos/${pedidoId}/${Date.now()}.jpg`
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('fotos-entrega')
-        .upload(fileName, photoFile)
+        .upload(fileName, blob, { contentType: 'image/jpeg' })
+      if (uploadError) throw uploadError
+      return supabase.storage.from('fotos-entrega').getPublicUrl(uploadData.path).data.publicUrl
+    }
 
-      if (uploadError) {
-        toast.error('Error al subir la foto')
-        setSubmitting(false)
-        return
+    try {
+      if (photoDataUrl) {
+        photoUrl = await uploadDataUrl(photoDataUrl)
+      } else if (photoFile) {
+        const fileName = `intentos/${pedidoId}/${Date.now()}.jpg`
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('fotos-entrega')
+          .upload(fileName, photoFile)
+        if (uploadError) throw uploadError
+        photoUrl =
+          supabase.storage.from('fotos-entrega').getPublicUrl(uploadData.path).data.publicUrl
       }
-
-      photoUrl =
-        supabase.storage.from('fotos-entrega').getPublicUrl(uploadData.path)
-          .data.publicUrl
+    } catch (err) {
+      toast.error('Error al subir la foto')
+      console.error(err)
+      setSubmitting(false)
+      return
     }
 
     // --- Insert intento_entrega ---
@@ -787,14 +827,30 @@ export default function PedidoDetalle({ pedido: initialPedido, onVolver }: Props
                 <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                   Foto del comprobante
                 </label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePhotoChange}
-                  className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-red-700 hover:file:bg-red-100 dark:text-zinc-400 dark:file:bg-red-950/50 dark:file:text-red-400 dark:hover:file:bg-red-900/50"
-                />
+                <div className="mt-1">
+                  {photoPreview ? (
+                    <div className="space-y-2">
+                      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-zinc-800">
+                        <img src={photoPreview} alt="Foto" className="w-full object-cover" />
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={handleSacarFoto}>
+                        Sacar de nuevo
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button type="button" variant="outline" size="sm" onClick={handleSacarFoto}>
+                      📷 Sacar foto
+                    </Button>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleWebFileChange}
+                    className="hidden"
+                  />
+                </div>
               </div>
             </>
           )}
@@ -805,17 +861,30 @@ export default function PedidoDetalle({ pedido: initialPedido, onVolver }: Props
               <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                 Foto del comprobante *
               </label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handlePhotoChange}
-                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-red-700 hover:file:bg-red-100 dark:text-zinc-400 dark:file:bg-red-950/50 dark:file:text-red-400 dark:hover:file:bg-red-900/50"
-              />
-              <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-                Sacá una foto como comprobante
-              </p>
+              <div className="mt-1">
+                {photoPreview ? (
+                  <div className="space-y-2">
+                    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-zinc-800">
+                      <img src={photoPreview} alt="Foto" className="w-full object-cover" />
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={handleSacarFoto}>
+                      Sacar de nuevo
+                    </Button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" onClick={handleSacarFoto}>
+                    📷 Sacar foto
+                  </Button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleWebFileChange}
+                  className="hidden"
+                />
+              </div>
             </div>
           )}
 
@@ -826,14 +895,30 @@ export default function PedidoDetalle({ pedido: initialPedido, onVolver }: Props
                 <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                   Foto del comprobante *
                 </label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePhotoChange}
-                  className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-red-700 hover:file:bg-red-100 dark:text-zinc-400 dark:file:bg-red-950/50 dark:file:text-red-400 dark:hover:file:bg-red-900/50"
-                />
+                <div className="mt-1">
+                  {photoPreview ? (
+                    <div className="space-y-2">
+                      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-zinc-800">
+                        <img src={photoPreview} alt="Foto" className="w-full object-cover" />
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={handleSacarFoto}>
+                        Sacar de nuevo
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button type="button" variant="outline" size="sm" onClick={handleSacarFoto}>
+                      📷 Sacar foto
+                    </Button>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleWebFileChange}
+                    className="hidden"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
@@ -850,16 +935,6 @@ export default function PedidoDetalle({ pedido: initialPedido, onVolver }: Props
             </>
           )}
 
-          {/* Photo preview */}
-          {photoPreview && (
-            <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-zinc-800">
-              <img
-                src={photoPreview}
-                alt="Preview"
-                className="w-full object-cover"
-              />
-            </div>
-          )}
 
           {/* Form action buttons */}
           <div className="flex gap-2">
