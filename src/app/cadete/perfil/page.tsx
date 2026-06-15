@@ -20,7 +20,8 @@ export default function CadetePerfilPage() {
 
   const redirectTo = (path: string) => {
     if (Capacitor.isNativePlatform()) {
-      window.location.href = '/#' + path
+      // Forzar recarga completa en Capacitor
+      window.location.replace('https://app' + path)
     } else {
       window.location.href = path
     }
@@ -35,7 +36,7 @@ export default function CadetePerfilPage() {
   useEffect(() => {
     if (!loading && (!user || user.rol !== 'cadete')) {
       if (Capacitor.isNativePlatform()) {
-        window.location.href = '/#/login'
+        window.location.replace('https://app/login')
       } else {
         window.location.href = '/login'
       }

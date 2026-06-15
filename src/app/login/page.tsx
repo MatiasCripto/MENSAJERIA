@@ -17,8 +17,8 @@ export default function LoginPage() {
 
   const redirectTo = (path: string) => {
     if (Capacitor.isNativePlatform()) {
-      // En Capacitor con static export usar hash-based navigation
-      window.location.href = '/#' + path
+      // Forzar recarga completa en Capacitor
+      window.location.replace('https://app' + path)
     } else {
       window.location.href = path
     }
