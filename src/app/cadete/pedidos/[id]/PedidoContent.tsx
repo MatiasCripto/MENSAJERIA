@@ -53,6 +53,17 @@ export default function PedidoContent() {
   const [submitting, setSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // --- Espera (waiting time) state ---
+  const [esperaActiva, setEsperaActiva] = useState<{ id: string; inicio: string } | null>(null)
+  const [esperaSegundos, setEsperaSegundos] = useState(0)
+  const [esperaFinalizada, setEsperaFinalizada] = useState<{ minutos: number; importe: number } | null>(null)
+  const [iniciandoEspera, setIniciandoEspera] = useState(false)
+
+  // --- Cobro state ---
+  const [cobroActivo, setCobroActivo] = useState(false)
+  const [cobroTipo, setCobroTipo] = useState<'efectivo' | 'transferencia'>('efectivo')
+  const [cobroMonto, setCobroMonto] = useState('')
+
   // --- Keyword verification state ---
   const [mostrarInputClave, setMostrarInputClave] = useState(false)
   const [inputClave, setInputClave] = useState('')
@@ -87,6 +98,15 @@ export default function PedidoContent() {
 
     fetchPedido()
   }, [pedidoId, sessionLoading, user, router, supabase])
+
+  // Timer for espera
+  useEffect(() => {
+    if (!esperaActiva) return
+    const interval = setInterval(() => {
+      setEsperaSegundos((s) => s + 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [esperaActiva])
 
   // --- Derived values ---
   const estado = pedido?.estado ?? ''
@@ -171,6 +191,65 @@ export default function PedidoContent() {
     setErrorClave(null)
   }
 
+  // --- Espera handlers ---
+  const handleIniciarEspera = async () => {
+    setIniciandoEspera(true)
+    const { data, error } = await supabase
+      .from('esperas')
+      .insert({
+        pedido_id: pedidoId,
+        cadete_id: user?.id,
+        inicio: new Date().toISOString(),
+      })
+      .select()
+      .single()
+    if (error || !data) {
+      toast.error('Error al iniciar la espera')
+      setIniciandoEspera(false)
+      return
+    }
+    setEsperaActiva({ id: data.id, inicio: data.inicio })
+    setEsperaSegundos(0)
+    setIniciandoEspera(false)
+    toast.success('Espera iniciada')
+  }
+
+  const handleFinalizarEspera = async () => {
+    if (!esperaActiva) return
+    const ahora = new Date()
+    const inicio = new Date(esperaActiva.inicio)
+    const minutosTotales = Math.floor((ahora.getTime() - inicio.getTime()) / 60000)
+    const minutosCobrados = Math.max(0, minutosTotales - 5) // 5 min tolerancia
+    const bloques = Math.ceil(minutosCobrados / 30)
+    const importe = bloques * 5000
+
+    setIniciandoEspera(true)
+    const { error } = await supabase
+      .from('esperas')
+      .update({
+        fin: ahora.toISOString(),
+        minutos_cobrados: minutosCobrados,
+        importe_espera: importe,
+      })
+      .eq('id', esperaActiva.id)
+    if (error) {
+      toast.error('Error al finalizar la espera')
+      setIniciandoEspera(false)
+      return
+    }
+    setEsperaFinalizada({ minutos: minutosCobrados, importe })
+    setEsperaActiva(null)
+    setEsperaSegundos(0)
+    setIniciandoEspera(false)
+    toast.success(`Espera finalizada — $${importe.toFixed(2)}`)
+  }
+
+  const formatTiempo = (segundos: number) => {
+    const m = Math.floor(segundos / 60)
+    const s = segundos % 60
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+
   const openDeliveryForm = (type: FormType) => {
     setFormType(type)
     setReceptorNombre('')
@@ -195,6 +274,10 @@ export default function PedidoContent() {
     if (formType === 'entregado') {
       if (!receptorNombre.trim() || !receptorDni.trim()) {
         toast.error('Completá nombre y DNI del receptor')
+        return
+      }
+      if (cobroActivo && !cobroMonto.trim()) {
+        toast.error('Ingresá el monto del cobro')
         return
       }
     }
@@ -270,9 +353,18 @@ export default function PedidoContent() {
 
     // --- Update pedido estado ---
     const newEstado = formType === 'entregado' ? 'entregado' : 'fallido'
+    const updateFields: Record<string, unknown> = { estado: newEstado }
+    if (formType === 'entregado' && cobroActivo) {
+      updateFields.cobro_monto = parseFloat(cobroMonto)
+      updateFields.cobro_tipo = cobroTipo
+      if (cobroTipo === 'transferencia') {
+        updateFields.estado = 'esperando_pago'
+        updateFields.cobro_confirmado = false
+      }
+    }
     const { error: updateError } = await supabase
       .from('pedidos')
-      .update({ estado: newEstado })
+      .update(updateFields)
       .eq('id', pedidoId)
 
     if (updateError) {
@@ -281,7 +373,7 @@ export default function PedidoContent() {
       return
     }
 
-    setPedido({ ...pedido!, estado: newEstado })
+    setPedido({ ...pedido!, estado: updateFields.estado as string })
     setShowForm(false)
     setShowDeliveryOptions(false)
     toast.success(
@@ -482,6 +574,55 @@ export default function PedidoContent() {
         Abrir en Google Maps
       </Button>
 
+      {/* 3.5 Espera section */}
+      {(estado === 'en_camino' || estado === 'en_retiro') && (
+        <Card title={esperaActiva ? 'Espera activa' : 'Tiempo de espera'}>
+          {esperaActiva ? (
+            <div className="space-y-3 text-center">
+              <p className="text-3xl font-bold text-primary font-mono">
+                {formatTiempo(esperaSegundos)}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">
+                $5000 cada 30 min · 5 min de tolerancia
+              </p>
+              <Button
+                onClick={handleFinalizarEspera}
+                disabled={iniciandoEspera}
+                variant="outline"
+                className="w-full"
+              >
+                {iniciandoEspera ? 'Finalizando...' : 'Finalizar espera'}
+              </Button>
+            </div>
+          ) : esperaFinalizada ? (
+            <div className="space-y-2 text-center">
+              <p className="text-sm text-green-600 dark:text-green-400">
+                Espera finalizada
+              </p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">
+                {esperaFinalizada.minutos} min — ${esperaFinalizada.importe.toFixed(2)}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEsperaFinalizada(null)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={handleIniciarEspera}
+              disabled={iniciandoEspera}
+              variant="outline"
+              className="w-full"
+            >
+              {iniciandoEspera ? 'Iniciando...' : 'Iniciar espera'}
+            </Button>
+          )}
+        </Card>
+      )}
+
       {/* 4. Action Buttons (based on estado) */}
       {estado === 'asignado' && (
         <Button
@@ -566,6 +707,50 @@ export default function PedidoContent() {
           <p className="text-sm font-medium text-gray-900 dark:text-white">
             Acciones de entrega
           </p>
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
+            <input
+              type="checkbox"
+              checked={cobroActivo}
+              onChange={(e) => setCobroActivo(e.target.checked)}
+              className="rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            El cliente realiza un pago
+          </label>
+          {cobroActivo && (
+            <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-zinc-700">
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
+                  <input
+                    type="radio"
+                    name="cobro_tipo"
+                    value="efectivo"
+                    checked={cobroTipo === 'efectivo'}
+                    onChange={() => setCobroTipo('efectivo')}
+                  />
+                  Efectivo
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
+                  <input
+                    type="radio"
+                    name="cobro_tipo"
+                    value="transferencia"
+                    checked={cobroTipo === 'transferencia'}
+                    onChange={() => setCobroTipo('transferencia')}
+                  />
+                  Transferencia
+                </label>
+              </div>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={cobroMonto}
+                onChange={(e) => setCobroMonto(e.target.value)}
+                placeholder="Monto $"
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white"
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Button
               variant="primary"
@@ -608,6 +793,18 @@ export default function PedidoContent() {
           >
             Cancelar
           </Button>
+        </div>
+      )}
+
+      {/* 5.5 Waiting for payment confirmation */}
+      {estado === 'esperando_pago' && (
+        <div className="rounded-lg bg-yellow-50 p-4 text-center dark:bg-yellow-950/30">
+          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+            Esperando confirmación del operador...
+          </p>
+          <p className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+            El pago por transferencia debe ser confirmado por el operador
+          </p>
         </div>
       )}
 
@@ -751,7 +948,7 @@ export default function PedidoContent() {
       )}
 
       {/* 7. Completed state message */}
-      {(estado === 'entregado' || estado === 'fallido') && (
+      {(estado === 'entregado' || estado === 'fallido' || estado === 'esperando_pago') && (
         <div
           className={`rounded-lg p-4 text-center ${
             estado === 'entregado'

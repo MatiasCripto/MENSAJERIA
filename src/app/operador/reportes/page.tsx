@@ -21,9 +21,8 @@ type CadeteResumen = {
   cadete_nombre: string
   cantidad: number
   total_importe: number
-  efectivo: number
-  mercadopago: number
-  transferencia: number
+  ganancia_cadete: number
+  ganancia_empresa: number
 }
 
 function getPeriodRange(periodo: Periodo): { desde: string; hasta: string } {
@@ -52,12 +51,6 @@ const PERIODO_OPTIONS = [
   { value: 'mes', label: 'Este mes' },
   { value: 'personalizado', label: 'Rango personalizado' },
 ]
-
-const FORMA_PAGO_LABELS: Record<string, string> = {
-  efectivo: 'Efectivo',
-  mercadopago: 'MercadoPago',
-  transferencia: 'Transferencia',
-}
 
 export default function ReportesPage() {
   const { isOperador, loading } = useSession()
@@ -117,7 +110,7 @@ export default function ReportesPage() {
 
     const { data, error } = await supabase
       .from('pedidos')
-      .select('cadete_id, importe, forma_pago, updated_at')
+      .select('cadete_id, importe, updated_at')
       .eq('estado', 'entregado')
       .gte('updated_at', desde)
       .lte('updated_at', hasta)
@@ -143,9 +136,8 @@ export default function ReportesPage() {
           cadete_nombre: row.cadete_id,
           cantidad: 0,
           total_importe: 0,
-          efectivo: 0,
-          mercadopago: 0,
-          transferencia: 0,
+          ganancia_cadete: 0,
+          ganancia_empresa: 0,
         }
         map.set(row.cadete_id, entry)
       }
@@ -153,9 +145,10 @@ export default function ReportesPage() {
       entry.cantidad++
       if (row.importe) entry.total_importe += Number(row.importe)
 
-      if (row.forma_pago === 'efectivo') entry.efectivo += Number(row.importe ?? 0)
-      else if (row.forma_pago === 'mercadopago') entry.mercadopago += Number(row.importe ?? 0)
-      else if (row.forma_pago === 'transferencia') entry.transferencia += Number(row.importe ?? 0)
+      const gananciaCadete = row.importe ? Number(row.importe) * 0.7 : 0
+      const gananciaEmpresa = row.importe ? Number(row.importe) * 0.3 : 0
+      entry.ganancia_cadete += gananciaCadete
+      entry.ganancia_empresa += gananciaEmpresa
     }
 
     // Resolve cadete names
@@ -190,11 +183,10 @@ export default function ReportesPage() {
     (acc, r) => ({
       cantidad: acc.cantidad + r.cantidad,
       total_importe: acc.total_importe + r.total_importe,
-      efectivo: acc.efectivo + r.efectivo,
-      mercadopago: acc.mercadopago + r.mercadopago,
-      transferencia: acc.transferencia + r.transferencia,
+      ganancia_cadete: acc.ganancia_cadete + r.ganancia_cadete,
+      ganancia_empresa: acc.ganancia_empresa + r.ganancia_empresa,
     }),
-    { cantidad: 0, total_importe: 0, efectivo: 0, mercadopago: 0, transferencia: 0 },
+    { cantidad: 0, total_importe: 0, ganancia_cadete: 0, ganancia_empresa: 0 },
   )
 
   const getPeriodLabel = () => {
@@ -220,26 +212,24 @@ export default function ReportesPage() {
         r.cadete_nombre,
         String(r.cantidad),
         `$${r.total_importe.toFixed(2)}`,
-        `$${r.efectivo.toFixed(2)}`,
-        `$${r.mercadopago.toFixed(2)}`,
-        `$${r.transferencia.toFixed(2)}`,
+        `$${r.ganancia_cadete.toFixed(2)}`,
+        `$${r.ganancia_empresa.toFixed(2)}`,
       ])
 
       autoTable(doc, {
         startY: 40,
-        head: [['Cadete', 'Pedidos', 'Total', 'Efectivo', 'MercadoPago', 'Transferencia']],
+        head: [['Cadete', 'Pedidos', 'Total', 'Ganancia Cadete (70%)', 'Ganancia Empresa (30%)']],
         body: tableData,
         foot: [[
           'TOTALES',
           String(totales.cantidad),
           `$${totales.total_importe.toFixed(2)}`,
-          `$${totales.efectivo.toFixed(2)}`,
-          `$${totales.mercadopago.toFixed(2)}`,
-          `$${totales.transferencia.toFixed(2)}`,
+          `$${totales.ganancia_cadete.toFixed(2)}`,
+          `$${totales.ganancia_empresa.toFixed(2)}`,
         ]],
-        footStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+        footStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold' },
         styles: { fontSize: 9 },
-        headStyles: { fillColor: [52, 73, 94], textColor: 255 },
+        headStyles: { fillColor: [220, 38, 38], textColor: 255 },
       })
 
       doc.save(`reporte-facturacion-${periodo}-${new Date().toISOString().slice(0, 10)}.pdf`)
@@ -331,31 +321,21 @@ export default function ReportesPage() {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Cadete</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">Pedidos</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">Total ($)</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">Efectivo</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">MercadoPago</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">Transferencia</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Cadete</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Pedidos</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Total ($)</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Ganancia Cadete (70%)</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Ganancia Empresa (30%)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {resumen.map((r) => (
                   <tr key={r.cadete_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{r.cadete_nombre}</td>
-                    <td className="px-4 py-3 text-right text-gray-700">{r.cantidad}</td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-900">
-                      ${r.total_importe.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700">
-                      ${r.efectivo.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700">
-                      ${r.mercadopago.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700">
-                      ${r.transferencia.toFixed(2)}
-                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{r.cadete_nombre}</td>
+                    <td className="px-4 py-3 text-right text-gray-700 dark:text-zinc-300">{r.cantidad}</td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">${r.total_importe.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-green-600 dark:text-green-400 font-medium">${r.ganancia_cadete.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-primary font-medium">${r.ganancia_empresa.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -364,9 +344,8 @@ export default function ReportesPage() {
                   <td className="px-4 py-3">TOTALES</td>
                   <td className="px-4 py-3 text-right">{totales.cantidad}</td>
                   <td className="px-4 py-3 text-right">${totales.total_importe.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right">${totales.efectivo.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right">${totales.mercadopago.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right">${totales.transferencia.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">${totales.ganancia_cadete.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-primary">${totales.ganancia_empresa.toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>

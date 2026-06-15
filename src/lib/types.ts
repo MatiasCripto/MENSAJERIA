@@ -10,6 +10,7 @@ export type EstadoPedido =
   | 'en_retiro'
   | 'en_camino'
   | 'entregado'
+  | 'esperando_pago'
   | 'fallido'
 
 export type TipoIntento =
@@ -57,6 +58,11 @@ export interface Pedido {
   hora_salida: string | null
   importe: number | null
   forma_pago: FormaPago | null
+  cobro_monto: number | null
+  cobro_tipo: 'efectivo' | 'transferencia' | null
+  cobro_confirmado: boolean | null
+  cobro_espera: number | null
+  cliente_id: string | null
   created_at: string
   updated_at: string
 }

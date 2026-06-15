@@ -22,6 +22,7 @@ export function getEstadoColor(estado: string) {
     en_retiro: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400',
     en_camino: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-400',
     entregado: 'bg-green-100 text-green-800',
+    esperando_pago: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
     fallido: 'bg-red-100 text-red-800',
   }
   return colors[estado] || 'bg-gray-100 text-gray-800'
@@ -34,6 +35,7 @@ export function getEstadoLabel(estado: string) {
     en_retiro: 'En retiro',
     en_camino: 'En camino',
     entregado: 'Entregado',
+    esperando_pago: 'Esperando pago',
     fallido: 'Fallido',
   }
   return labels[estado] || estado

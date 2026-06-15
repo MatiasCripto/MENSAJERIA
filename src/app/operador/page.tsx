@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import {
   formatDate,
@@ -102,6 +103,7 @@ export default function OperadorDashboard() {
     entregado: 0,
   })
   const [cadeteStats, setCadeteStats] = useState<CadeteStats[]>([])
+  const [esperandoPagoCount, setEsperandoPagoCount] = useState(0)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -140,6 +142,14 @@ export default function OperadorDashboard() {
         ).length,
         entregado: all.filter((p) => p.estado === 'entregado').length,
       })
+
+      // Fetch pedidos esperando pago
+      const { count: esperandoPagoCount } = await supabase
+        .from('pedidos')
+        .select('id', { count: 'exact', head: true })
+        .eq('estado', 'esperando_pago')
+      setEsperandoPagoCount(esperandoPagoCount ?? 0)
+
       // Fetch cadete day stats from recorridos
       const { data: cadetesActivos } = await supabase
         .from('usuarios')
@@ -317,6 +327,28 @@ export default function OperadorDashboard() {
           </Card>
         ))}
       </div>
+
+      {/* Cobros alert */}
+      {esperandoPagoCount > 0 && (
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/50 dark:bg-yellow-950/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                {esperandoPagoCount} pedido{esperandoPagoCount !== 1 ? 's' : ''} esperando confirmación de pago
+              </p>
+              <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                Revisá los pedidos con pago por transferencia pendiente
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => router.push('/operador/pedidos?filtro=esperando_pago')}
+            >
+              Ver pedidos
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Recent orders */}
       <Card title="Últimos pedidos">

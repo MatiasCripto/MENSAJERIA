@@ -57,6 +57,11 @@ type Pedido = {
   hora_salida: string | null
   importe: number | null
   forma_pago: string | null
+  cobro_monto: number | null
+  cobro_tipo: string | null
+  cobro_confirmado: boolean | null
+  cobro_espera: number | null
+  cliente_id: string | null
   created_at: string
   updated_at: string
 }
@@ -290,6 +295,28 @@ export default function PedidoDetailPage() {
     })
     setEditingBilling(false)
     toast.success('Datos de facturación actualizados')
+  }
+
+  const [confirmandoPago, setConfirmandoPago] = useState(false)
+
+  const handleConfirmarPago = async () => {
+    if (!pedido) return
+    setConfirmandoPago(true)
+    const { error } = await supabase
+      .from('pedidos')
+      .update({
+        cobro_confirmado: true,
+        estado: 'entregado',
+      })
+      .eq('id', pedido.id)
+    if (error) {
+      toast.error('Error al confirmar el pago')
+      setConfirmandoPago(false)
+      return
+    }
+    setPedido({ ...pedido, cobro_confirmado: true, estado: 'entregado' })
+    setConfirmandoPago(false)
+    toast.success('Pago confirmado — pedido entregado')
   }
 
   if (loading || fetching) {
@@ -580,6 +607,25 @@ export default function PedidoDetailPage() {
                   onClick={handleEditBilling}
                 >
                   Editar
+                </Button>
+              </div>
+            )}
+            {currentPedido.estado === 'esperando_pago' && (
+              <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/50 dark:bg-yellow-950/30">
+                <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                  Pago por transferencia pendiente
+                </h3>
+                {currentPedido.cobro_monto && (
+                  <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-400">
+                    Monto: ${Number(currentPedido.cobro_monto).toFixed(2)}
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  className="mt-3"
+                  onClick={handleConfirmarPago}
+                >
+                  Confirmar pago recibido
                 </Button>
               </div>
             )}
