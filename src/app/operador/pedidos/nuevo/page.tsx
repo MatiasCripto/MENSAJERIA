@@ -76,6 +76,13 @@ export default function NuevoPedidoPage() {
   const [contactoOtroNombre, setContactoOtroNombre] = useState('')
   const [clienteSearch, setClienteSearch] = useState('')
   const [clienteSearchOpen, setClienteSearchOpen] = useState(false)
+  const [clienteHighlightIndex, setClienteHighlightIndex] = useState(-1)
+  const clienteListRef = useRef<HTMLDivElement>(null)
+
+  const filteredClientes = useMemo(
+    () => clientes.filter((c) => c.nombre.toLowerCase().includes(clienteSearch.toLowerCase())),
+    [clientes, clienteSearch],
+  )
 
   useEffect(() => {
     if (!loading && !isOperador) {
@@ -117,6 +124,13 @@ export default function NuevoPedidoPage() {
       })
   }, [form.cliente_id, supabase])
 
+  // Scroll highlighted client into view
+  useEffect(() => {
+    if (clienteHighlightIndex < 0 || !clienteListRef.current) return
+    const child = clienteListRef.current.children[clienteHighlightIndex] as HTMLElement
+    if (child) child.scrollIntoView({ block: 'nearest' })
+  }, [clienteHighlightIndex])
+
   const handleClienteChange = useCallback((clienteId: string) => {
     const selected = clientes.find((c) => c.id === clienteId)
     if (!selected) return
@@ -139,7 +153,7 @@ export default function NuevoPedidoPage() {
     setForm((prev) => {
       const cliente = clientes.find((c) => c.id === prev.cliente_id)
       const telefono = contacto.telefono || cliente?.telefono || ''
-      return { ...prev, contacto_nombre: contacto.nombre, retiro_telefono: prev.retiro_telefono || telefono }
+      return { ...prev, contacto_nombre: contacto.nombre, retiro_contacto: prev.retiro_contacto || contacto.nombre, retiro_telefono: prev.retiro_telefono || telefono }
     })
   }, [clientes])
 
@@ -295,6 +309,7 @@ export default function NuevoPedidoPage() {
                   onChange={(e) => {
                     setClienteSearch(e.target.value)
                     setClienteSearchOpen(true)
+                    setClienteHighlightIndex(-1)
                     if (!e.target.value) {
                       setForm((prev) => ({
                         ...prev,
@@ -304,30 +319,54 @@ export default function NuevoPedidoPage() {
                       }))
                     }
                   }}
-                  onFocus={() => clienteSearch.length >= 1 && setClienteSearchOpen(true)}
+                  onFocus={() => {
+                    if (clienteSearch.length >= 1) setClienteSearchOpen(true)
+                  }}
                   onBlur={() => setTimeout(() => setClienteSearchOpen(false), 200)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      setClienteHighlightIndex((prev) =>
+                        prev < filteredClientes.length - 1 ? prev + 1 : 0,
+                      )
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault()
+                      setClienteHighlightIndex((prev) =>
+                        prev > 0 ? prev - 1 : filteredClientes.length - 1,
+                      )
+                    } else if (e.key === 'Enter' && clienteHighlightIndex >= 0) {
+                      e.preventDefault()
+                      const selected = filteredClientes[clienteHighlightIndex]
+                      if (selected) handleClienteChange(selected.id)
+                    } else if (e.key === 'Escape') {
+                      setClienteSearchOpen(false)
+                      setClienteHighlightIndex(-1)
+                    }
+                  }}
                   placeholder="Escribí para buscar..."
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white dark:placeholder:text-zinc-500"
                 />
                 {clienteSearchOpen && (
-                  <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-[#1a1a1a]">
-                    {clientes
-                      .filter((c) =>
-                        c.nombre.toLowerCase().includes(clienteSearch.toLowerCase()),
-                      )
-                      .map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onMouseDown={() => handleClienteChange(c.id)}
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-800"
-                        >
-                          {c.nombre}
-                        </button>
-                      ))}
-                    {clientes.filter((c) =>
-                      c.nombre.toLowerCase().includes(clienteSearch.toLowerCase()),
-                    ).length === 0 && (
+                  <div
+                    ref={clienteListRef}
+                    className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-[#1a1a1a]"
+                  >
+                    {filteredClientes.map((c, i) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onMouseDown={() => handleClienteChange(c.id)}
+                        onMouseEnter={() => setClienteHighlightIndex(i)}
+                        className={`w-full px-3 py-2 text-left text-sm dark:text-white ${
+                          i === clienteHighlightIndex
+                            ? 'bg-gray-200 dark:bg-zinc-700'
+                            : 'hover:bg-gray-100 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        {c.nombre}
+                      </button>
+                    ))}
+                    {filteredClientes.length === 0 && (
                       <p className="px-3 py-2 text-sm text-gray-400">Sin resultados</p>
                     )}
                   </div>
