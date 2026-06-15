@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -19,6 +19,9 @@ const FORMA_PAGO_OPTIONS = [
   { value: 'transferencia', label: 'Transferencia' },
 ]
 
+type ClienteOption = { id: string; nombre: string }
+type ContactoOption = { id: string; nombre: string; cargo: string | null; telefono: string | null }
+
 type FormData = {
   retiro_direccion: string
   retiro_contacto: string
@@ -28,6 +31,7 @@ type FormData = {
   entrega_telefono: string
   notas: string
   cliente_empresa: string
+  cliente_id: string
   contacto_nombre: string
   hora_salida: string
   importe: string
@@ -43,6 +47,7 @@ const INITIAL_FORM: FormData = {
   entrega_telefono: '',
   notas: '',
   cliente_empresa: '',
+  cliente_id: '',
   contacto_nombre: '',
   hora_salida: '',
   importe: '',
@@ -63,11 +68,72 @@ export default function NuevoPedidoPage() {
     tracking_url: string
   } | null>(null)
 
+  // Client & contact state
+  const [clientes, setClientes] = useState<ClienteOption[]>([])
+  const [contactos, setContactos] = useState<ContactoOption[]>([])
+  const [contactoOtro, setContactoOtro] = useState(false)
+  const [contactoOtroNombre, setContactoOtroNombre] = useState('')
+
   useEffect(() => {
     if (!loading && !isOperador) {
       router.replace('/login')
     }
   }, [loading, isOperador, router])
+
+  // Load clients
+  useEffect(() => {
+    if (!isOperador) return
+    supabase
+      .from('clientes')
+      .select('id, nombre')
+      .order('nombre')
+      .then(({ data }) => {
+        if (data) setClientes(data)
+      })
+  }, [isOperador, supabase])
+
+  // Load contacts when client changes
+  useEffect(() => {
+    if (!form.cliente_id) {
+      setContactos([])
+      setContactoOtro(false)
+      setContactoOtroNombre('')
+      setForm((prev) => ({ ...prev, contacto_nombre: '' }))
+      return
+    }
+    supabase
+      .from('clientes_contactos')
+      .select('id, nombre, cargo, telefono')
+      .eq('cliente_id', form.cliente_id)
+      .order('nombre')
+      .then(({ data }) => {
+        setContactos(data ?? [])
+        setContactoOtro(false)
+        setContactoOtroNombre('')
+        setForm((prev) => ({ ...prev, contacto_nombre: '' }))
+      })
+  }, [form.cliente_id, supabase])
+
+  const handleClienteChange = useCallback((clienteId: string) => {
+    const selected = clientes.find((c) => c.id === clienteId)
+    setForm((prev) => ({
+      ...prev,
+      cliente_id: clienteId,
+      cliente_empresa: selected?.nombre ?? '',
+      contacto_nombre: '',
+    }))
+  }, [clientes])
+
+  const handleContactoSelect = useCallback((contacto: ContactoOption) => {
+    setContactoOtro(false)
+    setContactoOtroNombre('')
+    setForm((prev) => ({ ...prev, contacto_nombre: contacto.nombre }))
+  }, [])
+
+  const handleContactoOtro = useCallback(() => {
+    setContactoOtro(true)
+    setForm((prev) => ({ ...prev, contacto_nombre: '' }))
+  }, [])
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {}
@@ -100,7 +166,6 @@ export default function NuevoPedidoPage() {
   ) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
-    // Clear error on change
     if (errors[name as keyof FormData]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }))
     }
@@ -115,6 +180,7 @@ export default function NuevoPedidoPage() {
 
     try {
       const palabraClave = generarPalabraClave()
+      const contactoNombre = contactoOtro ? contactoOtroNombre.trim() : form.contacto_nombre.trim()
 
       const { data, error: insertError } = await supabase
         .from('pedidos')
@@ -129,7 +195,8 @@ export default function NuevoPedidoPage() {
           palabra_clave: palabraClave,
           estado: 'pendiente',
           cliente_empresa: form.cliente_empresa.trim() || null,
-          contacto_nombre: form.contacto_nombre.trim() || null,
+          cliente_id: form.cliente_id || null,
+          contacto_nombre: contactoNombre || null,
           hora_salida: form.hora_salida || null,
           importe: form.importe ? parseFloat(form.importe) : null,
           forma_pago: form.forma_pago || null,
@@ -141,6 +208,18 @@ export default function NuevoPedidoPage() {
         toast.error('Error al crear el pedido')
         console.error('Insert error:', insertError)
         return
+      }
+
+      // Save new contact to clientes_contactos if "Otro contacto" was used
+      if (contactoOtro && contactoOtroNombre.trim() && form.cliente_id) {
+        await supabase
+          .from('clientes_contactos')
+          .insert({
+            cliente_id: form.cliente_id,
+            nombre: contactoOtroNombre.trim(),
+          })
+          .select()
+          .single()
       }
 
       const trackingUrl = `${window.location.origin}/seguimiento/${data.token_cliente}`

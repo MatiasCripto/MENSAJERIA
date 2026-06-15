@@ -36,6 +36,15 @@ type Movimiento = {
   created_at: string
 }
 
+type Contacto = {
+  id: string
+  cliente_id: string
+  nombre: string
+  cargo: string | null
+  telefono: string | null
+  created_at: string
+}
+
 // ──────────────────────────────────────────────
 // Component
 // ──────────────────────────────────────────────
@@ -63,6 +72,12 @@ export default function ClienteCuentaCorrientePage() {
   // PDF loading
   const [generatingPdf, setGeneratingPdf] = useState(false)
 
+  // Contactos
+  const [contactos, setContactos] = useState<Contacto[]>([])
+  const [showContactoModal, setShowContactoModal] = useState(false)
+  const [contactoForm, setContactoForm] = useState({ nombre: '', cargo: '', telefono: '' })
+  const [submittingContacto, setSubmittingContacto] = useState(false)
+
   // ── Auth guard ──
   useEffect(() => {
     if (!sessionLoading && !isOperador) {
@@ -78,20 +93,27 @@ export default function ClienteCuentaCorrientePage() {
       setFetching(true)
       setError(null)
 
-      const [clienteRes, movimientosRes] = await Promise.all([
+      const [clienteRes, movimientosRes, contactosRes] = await Promise.all([
         supabase.from('clientes').select('*').eq('id', id).single(),
         supabase
           .from('cuenta_corriente')
           .select('*')
           .eq('cliente_id', id)
           .order('fecha', { ascending: false }),
+        supabase
+          .from('clientes_contactos')
+          .select('*')
+          .eq('cliente_id', id)
+          .order('nombre', { ascending: true }),
       ])
 
       if (clienteRes.error) throw new Error(clienteRes.error.message)
       if (movimientosRes.error) throw new Error(movimientosRes.error.message)
+      if (contactosRes.error) throw new Error(contactosRes.error.message)
 
       setCliente(clienteRes.data)
       setMovimientos(movimientosRes.data ?? [])
+      setContactos(contactosRes.data ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar los datos')
     } finally {
@@ -314,6 +336,49 @@ export default function ClienteCuentaCorrientePage() {
     }
   }, [cliente, movimientos])
 
+  // ── Contacto handlers ──
+  const handleEliminarContacto = async (contactoId: string) => {
+    if (!window.confirm('¿Eliminar este contacto?')) return
+    const { error } = await supabase
+      .from('clientes_contactos')
+      .delete()
+      .eq('id', contactoId)
+    if (error) {
+      toast.error('Error al eliminar el contacto')
+      return
+    }
+    setContactos((prev) => prev.filter((c) => c.id !== contactoId))
+    toast.success('Contacto eliminado')
+  }
+
+  const handleAgregarContacto = async () => {
+    if (!contactoForm.nombre.trim()) {
+      toast.error('El nombre es obligatorio')
+      return
+    }
+    setSubmittingContacto(true)
+    const { data, error } = await supabase
+      .from('clientes_contactos')
+      .insert({
+        cliente_id: id,
+        nombre: contactoForm.nombre.trim(),
+        cargo: contactoForm.cargo.trim() || null,
+        telefono: contactoForm.telefono.trim() || null,
+      })
+      .select()
+      .single()
+    if (error || !data) {
+      toast.error('Error al agregar el contacto')
+      setSubmittingContacto(false)
+      return
+    }
+    setContactos((prev) => [...prev, data])
+    setShowContactoModal(false)
+    setContactoForm({ nombre: '', cargo: '', telefono: '' })
+    setSubmittingContacto(false)
+    toast.success('Contacto agregado')
+  }
+
   // ── Loading state (session) ──
   if (sessionLoading) {
     return (
@@ -445,6 +510,40 @@ export default function ClienteCuentaCorrientePage() {
         </div>
       </Card>
 
+      {/* Contactos habituales */}
+      <Card title="Contactos habituales">
+        <div className="space-y-3">
+          {contactos.length === 0 ? (
+            <p className="py-4 text-center text-sm text-gray-500 dark:text-zinc-400">
+              No hay contactos registrados
+            </p>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+              {contactos.map((c) => (
+                <div key={c.id} className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{c.nombre}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">
+                      {[c.cargo, c.telefono].filter(Boolean).join(' · ') || ''}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleEliminarContacto(c.id)}
+                    className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <Button size="sm" variant="outline" onClick={() => setShowContactoModal(true)}>
+            + Agregar contacto
+          </Button>
+        </div>
+      </Card>
+
       {/* Movimientos table */}
       <Card title="Movimientos de cuenta corriente">
         {movimientos.length === 0 ? (
@@ -566,6 +665,60 @@ export default function ClienteCuentaCorrientePage() {
               </Button>
               <Button onClick={handleRegistrarPago} disabled={submittingPago}>
                 {submittingPago ? 'Registrando...' : 'Confirmar pago'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agregar contacto modal */}
+      {showContactoModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowContactoModal(false)
+              setContactoForm({ nombre: '', cargo: '', telefono: '' })
+            }
+          }}
+        >
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-[#1a1a1a]">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+              Agregar contacto
+            </h2>
+            <div className="space-y-4">
+              <Input
+                label="Nombre *"
+                value={contactoForm.nombre}
+                onChange={(e) => setContactoForm((prev) => ({ ...prev, nombre: e.target.value }))}
+                placeholder="Nombre del contacto"
+              />
+              <Input
+                label="Cargo"
+                value={contactoForm.cargo}
+                onChange={(e) => setContactoForm((prev) => ({ ...prev, cargo: e.target.value }))}
+                placeholder="Ej: Encargado, Recepcionista"
+              />
+              <Input
+                label="Teléfono"
+                value={contactoForm.telefono}
+                onChange={(e) => setContactoForm((prev) => ({ ...prev, telefono: e.target.value }))}
+                placeholder="11 1234-5678"
+              />
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowContactoModal(false)
+                  setContactoForm({ nombre: '', cargo: '', telefono: '' })
+                }}
+                disabled={submittingContacto}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleAgregarContacto} disabled={submittingContacto}>
+                {submittingContacto ? 'Guardando...' : 'Agregar contacto'}
               </Button>
             </div>
           </div>
