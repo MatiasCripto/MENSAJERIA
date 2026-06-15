@@ -7,6 +7,7 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     hostname: 'app',
+    allowNavigation: ['*.supabase.co'],
   },
   plugins: {
     Geolocation: {

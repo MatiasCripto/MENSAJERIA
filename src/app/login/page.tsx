@@ -64,10 +64,20 @@ export default function LoginPage() {
 
     // 1. Autenticar — extraer session de la respuesta directamente
     addLog(`1. signInWithPassword — email="${email}"`)
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    let authData: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data'] | null = null
+    let authError: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['error'] | null = null
+    try {
+      const result = await supabase.auth.signInWithPassword({ email, password })
+      authData = result.data
+      authError = result.error
+      addLog(`   ✓ signInWithPassword completó. error=${authError?.message ?? 'null'}`)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e)
+      addLog(`   ✗ signInWithPassword EXCEPCIÓN (catch): ${msg}`)
+      setError(`Error de red: ${msg}`)
+      setLoading(false)
+      return
+    }
 
     if (authError) {
       addLog(`   ✗ ERROR: ${authError.message}`)
