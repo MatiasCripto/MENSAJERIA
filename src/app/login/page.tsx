@@ -16,9 +16,16 @@ export default function LoginPage() {
   const supabase = createClient()
 
   const redirectTo = (path: string) => {
-    addLog(`redirectTo: isNativePlatform()=${Capacitor.isNativePlatform()}, path="${path}"`)
-    addLog(`redirectTo: haciendo window.location.href = '${path}'`)
-    window.location.href = path
+    const isNative = Capacitor.isNativePlatform()
+    addLog(`redirectTo: isNativePlatform()=${isNative}, path="${path}"`)
+    if (isNative) {
+      // En file:// scheme, navegar al index.html con hash
+      addLog(`redirectTo: haciendo window.location.href = 'index.html#${path}'`)
+      window.location.href = 'index.html#' + path
+    } else {
+      addLog(`redirectTo: haciendo window.location.href = '${path}'`)
+      window.location.href = path
+    }
   }
 
   const addLog = (msg: string) => {

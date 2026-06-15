@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   ...(isCapacitor
     ? {
         output: "export",
+        trailingSlash: true,
+        assetPrefix: "./",
         images: { unoptimized: true },
       }
     : {

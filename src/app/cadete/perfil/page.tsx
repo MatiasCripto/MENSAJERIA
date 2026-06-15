@@ -19,7 +19,11 @@ export default function CadetePerfilPage() {
   const [signingOut, setSigningOut] = useState(false)
 
   const redirectTo = (path: string) => {
-    window.location.href = path
+    if (Capacitor.isNativePlatform()) {
+      window.location.href = 'index.html#' + path
+    } else {
+      window.location.href = path
+    }
   }
 
   const handleSignOut = async () => {
@@ -30,7 +34,11 @@ export default function CadetePerfilPage() {
 
   useEffect(() => {
     if (!loading && (!user || user.rol !== 'cadete')) {
-      window.location.href = '/login'
+      if (Capacitor.isNativePlatform()) {
+        window.location.href = 'index.html#/login'
+      } else {
+        window.location.href = '/login'
+      }
     }
   }, [user, loading])
 
