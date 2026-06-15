@@ -16,21 +16,26 @@ export default function LoginPage() {
   const supabase = createClient()
 
   const redirectTo = (path: string) => {
-    if (Capacitor.isNativePlatform()) {
+    const isNative = Capacitor.isNativePlatform()
+    addLog(`redirectTo: isNativePlatform()=${isNative}, path="${path}"`)
+    if (isNative) {
       // Forzar recarga completa en Capacitor
+      addLog(`redirectTo: haciendo window.location.replace('https://app${path}')`)
       window.location.replace('https://app' + path)
     } else {
+      addLog(`redirectTo: haciendo window.location.href = '${path}'`)
       window.location.href = path
     }
   }
 
   const addLog = (msg: string) => {
     console.log('[LOGIN DEBUG]', msg)
-    setDebugLogs((prev) => [...prev.slice(-9), msg])
+    setDebugLogs((prev) => [...prev.slice(-19), msg])
   }
 
   // Si el SessionProvider ya tiene el user, redirigir
   useEffect(() => {
+    addLog(`useEffect sessionGuard: sessionLoading=${sessionLoading} user=${user ? `{id:${user.id},rol:${user.rol}}` : 'null'}`)
     if (!sessionLoading && user) {
       addLog(`SessionProvider ya tiene user: rol=${user.rol}, redirigiendo`)
       redirectTo(user.rol === 'operador' ? '/operador' : '/cadete')
@@ -54,6 +59,8 @@ export default function LoginPage() {
     setError('')
     setDebugLogs([])
     addLog('=== INICIO LOGIN ===')
+    addLog(`Capacitor.isNativePlatform()=${Capacitor.isNativePlatform()}`)
+    addLog(`userAgent="${navigator.userAgent.substring(0, 120)}"`)
 
     // 1. Autenticar — extraer session de la respuesta directamente
     addLog(`1. signInWithPassword — email="${email}"`)
@@ -173,12 +180,18 @@ export default function LoginPage() {
           <ThemeToggle />
         </div>
 
-        {debugLogs.length > 0 && (
+        {(Capacitor.isNativePlatform() || debugLogs.length > 0) && (
           <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
-            <p className="mb-1 text-xs font-semibold text-gray-500 dark:text-zinc-400">DEBUG LOGS:</p>
-            {debugLogs.map((msg, i) => (
-              <p key={i} className="text-[11px] leading-5 text-gray-600 font-mono dark:text-zinc-400">{msg}</p>
-            ))}
+            <p className="mb-1 text-xs font-semibold text-gray-500 dark:text-zinc-400">
+              DEBUG LOGS {Capacitor.isNativePlatform() ? '(CAPACITOR)' : ''}:
+            </p>
+            {debugLogs.length === 0 ? (
+              <p className="text-[11px] text-gray-400 font-mono dark:text-zinc-500">Esperando login...</p>
+            ) : (
+              debugLogs.map((msg, i) => (
+                <p key={i} className="text-[11px] leading-5 text-gray-600 font-mono dark:text-zinc-400">{msg}</p>
+              ))
+            )}
           </div>
         )}
 
