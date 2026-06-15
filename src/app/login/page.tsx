@@ -19,9 +19,10 @@ export default function LoginPage() {
     const isNative = Capacitor.isNativePlatform()
     addLog(`redirectTo: isNativePlatform()=${isNative}, path="${path}"`)
     if (isNative) {
-      // En file:// scheme, navegar al index.html con hash
-      addLog(`redirectTo: haciendo window.location.href = 'index.html#${path}'`)
-      window.location.href = 'index.html#' + path
+      // En file:// no se puede navegar a rutas — guardar destino y recargar
+      addLog(`redirectTo: guardando en localStorage redirectAfterLogin="${path}", recargando`)
+      localStorage.setItem('redirectAfterLogin', path)
+      window.location.reload()
     } else {
       addLog(`redirectTo: haciendo window.location.href = '${path}'`)
       window.location.href = path

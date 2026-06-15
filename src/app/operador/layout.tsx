@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils/cn'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 
 const navLinks = [
@@ -29,7 +30,12 @@ export default function OperadorLayout({
 
   useEffect(() => {
     if (!loading && !isOperador) {
-      router.replace('/login')
+      if (Capacitor.isNativePlatform()) {
+        localStorage.setItem('redirectAfterLogin', '/login')
+        window.location.reload()
+      } else {
+        router.replace('/login')
+      }
     }
   }, [loading, isOperador, router])
 

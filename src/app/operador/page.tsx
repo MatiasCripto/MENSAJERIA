@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/lib/hooks/useSession'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import {
@@ -207,7 +208,12 @@ export default function OperadorDashboard() {
 
   useEffect(() => {
     if (!loading && !isOperador) {
-      router.replace('/login')
+      if (Capacitor.isNativePlatform()) {
+        localStorage.setItem('redirectAfterLogin', '/login')
+        window.location.reload()
+      } else {
+        router.replace('/login')
+      }
       return
     }
 

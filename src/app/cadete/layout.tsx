@@ -5,6 +5,7 @@ import { useCadetePosition } from '@/lib/hooks/useCadetePosition'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Capacitor } from '@capacitor/core'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 
 export default function CadeteLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +31,12 @@ export default function CadeteLayout({ children }: { children: React.ReactNode }
   // Redirect if not cadete
   useEffect(() => {
     if (!loading && (!user || user.rol !== 'cadete')) {
-      router.replace('/login')
+      if (Capacitor.isNativePlatform()) {
+        localStorage.setItem('redirectAfterLogin', '/login')
+        window.location.reload()
+      } else {
+        router.replace('/login')
+      }
     }
   }, [user, loading, router])
 
