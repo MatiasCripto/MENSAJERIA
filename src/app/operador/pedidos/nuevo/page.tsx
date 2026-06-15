@@ -69,6 +69,10 @@ export default function NuevoPedidoPage() {
     tracking_url: string
   } | null>(null)
 
+  // Cadetes
+  const [cadetes, setCadetes] = useState<{ id: string; nombre: string }[]>([])
+  const [cadeteId, setCadeteId] = useState('')
+
   // Client & contact state
   const [clientes, setClientes] = useState<ClienteOption[]>([])
   const [contactos, setContactos] = useState<ContactoOption[]>([])
@@ -123,6 +127,20 @@ export default function NuevoPedidoPage() {
         setForm((prev) => ({ ...prev, contacto_nombre: '' }))
       })
   }, [form.cliente_id, supabase])
+
+  // Load cadetes
+  useEffect(() => {
+    if (!isOperador) return
+    supabase
+      .from('usuarios')
+      .select('id, nombre')
+      .eq('rol', 'cadete')
+      .eq('activo', true)
+      .order('nombre')
+      .then(({ data }) => {
+        if (data) setCadetes(data)
+      })
+  }, [isOperador, supabase])
 
   // Scroll highlighted client into view
   useEffect(() => {
@@ -214,6 +232,7 @@ export default function NuevoPedidoPage() {
       const palabraClave = generarPalabraClave()
       const contactoNombre = contactoOtro ? contactoOtroNombre.trim() : form.contacto_nombre.trim()
 
+      const assignedCadete = cadetes.find((c) => c.id === cadeteId)
       const { data, error: insertError } = await supabase
         .from('pedidos')
         .insert({
@@ -225,7 +244,8 @@ export default function NuevoPedidoPage() {
           entrega_telefono: form.entrega_telefono.trim(),
           notas: form.notas.trim() || null,
           palabra_clave: palabraClave,
-          estado: 'pendiente',
+          estado: assignedCadete ? 'asignado' : 'pendiente',
+          cadete_id: assignedCadete?.id || null,
           cliente_empresa: form.cliente_empresa.trim() || null,
           cliente_id: form.cliente_id || null,
           contacto_nombre: contactoNombre || null,
@@ -451,6 +471,15 @@ export default function NuevoPedidoPage() {
                   setForm((prev) => ({ ...prev, forma_pago: e.target.value }))
                 }
               />
+              <Select
+                label="Asignar a cadete (opcional)"
+                options={[
+                  { value: '', label: 'Sin asignar (pendiente)' },
+                  ...cadetes.map((c) => ({ value: c.id, label: c.nombre })),
+                ]}
+                value={cadeteId}
+                onChange={(e) => setCadeteId(e.target.value)}
+              />
             </div>
           </Card>
 
@@ -589,6 +618,7 @@ export default function NuevoPedidoPage() {
               onClick={() => {
                 setPedidoCreado(null)
                 setForm(INITIAL_FORM)
+                setCadeteId('')
                 setErrors({})
               }}
             >
