@@ -140,6 +140,7 @@ export default function FacturacionPage() {
   const [itemsManuales, setItemsManuales] = useState<ManualItem[]>([])
   const [descripcionManual, setDescripcionManual] = useState('')
   const [montoManual, setMontoManual] = useState('')
+  const [incluirIva, setIncluirIva] = useState(false)
 
   // ──────────────────────────────────────────────
   // 5a: Load empresa config
@@ -513,8 +514,17 @@ export default function FacturacionPage() {
         (sum, item) => sum + item.importe + item.cobro_espera,
         0,
       )
-      const iva = subtotal * 0.21
+      const iva = incluirIva ? subtotal * 0.21 : 0
       const total = subtotal + iva
+
+      const footRows = [
+        ['', '', '', '', 'Subtotal', `$${subtotal.toFixed(2)}`],
+      ]
+      if (incluirIva) {
+        footRows.push(['', '', '', '', 'IVA (21%)', `$${iva.toFixed(2)}`])
+      }
+      footRows.push(['', '', '', '', 'TOTAL', `$${total.toFixed(2)}`])
+      const totalFootIndex = footRows.length - 1
 
       autoTable(doc, {
         startY: y,
@@ -522,11 +532,7 @@ export default function FacturacionPage() {
           ['Código', 'Fecha', 'Descripción', 'Importe', 'Espera', 'Total'],
         ],
         body: tableBody,
-        foot: [
-          ['', '', '', '', 'Subtotal', `$${subtotal.toFixed(2)}`],
-          ['', '', '', '', 'IVA (21%)', `$${iva.toFixed(2)}`],
-          ['', '', '', '', 'TOTAL', `$${total.toFixed(2)}`],
-        ],
+        foot: footRows,
         styles: {
           fontSize: 8,
           font: 'Helvetica',
@@ -557,7 +563,7 @@ export default function FacturacionPage() {
         didParseCell(data) {
           if (
             data.section === 'foot' &&
-            data.row.index === 2
+            data.row.index === totalFootIndex
           ) {
             data.cell.styles.textColor = [220, 38, 38]
             data.cell.styles.fontStyle = 'bold'
@@ -612,7 +618,7 @@ export default function FacturacionPage() {
     } finally {
       setGeneratingPdf(false)
     }
-  }, [allItems, config, clienteNombre, clienteCuit, clienteDireccion, fechaDesde, fechaHasta])
+  }, [allItems, config, clienteNombre, clienteCuit, clienteDireccion, fechaDesde, fechaHasta, incluirIva])
 
   // ──────────────────────────────────────────────
   // Loading state
@@ -1092,6 +1098,20 @@ export default function FacturacionPage() {
             )}
           </div>
 
+          {/* ── IVA toggle ── */}
+          <div className="flex items-center gap-2 border-t border-gray-200 pt-4 dark:border-zinc-700">
+            <input
+              type="checkbox"
+              id="incluirIva"
+              checked={incluirIva}
+              onChange={(e) => setIncluirIva(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="incluirIva" className="text-sm text-gray-700 dark:text-zinc-300">
+              Incluir IVA (21%)
+            </label>
+          </div>
+
           {/* Preview / Generate buttons */}
           {(pedidos.length > 0 || itemsManuales.length > 0) && (
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -1215,7 +1235,7 @@ export default function FacturacionPage() {
                     (s, item) => s + item.importe + item.cobro_espera,
                     0,
                   )
-                  const iva = sub * 0.21
+                  const iva = incluirIva ? sub * 0.21 : 0
                   const tot = sub + iva
                   return (
                     <>
@@ -1226,13 +1246,15 @@ export default function FacturacionPage() {
                           ${sub.toFixed(2)}
                         </td>
                       </tr>
-                      <tr className="font-semibold">
-                        <td colSpan={4} />
-                        <td className="px-2 py-1 text-right">IVA (21%)</td>
-                        <td className="px-2 py-1 text-right">
-                          ${iva.toFixed(2)}
-                        </td>
-                      </tr>
+                      {incluirIva && (
+                        <tr className="font-semibold">
+                          <td colSpan={4} />
+                          <td className="px-2 py-1 text-right">IVA (21%)</td>
+                          <td className="px-2 py-1 text-right">
+                            ${iva.toFixed(2)}
+                          </td>
+                        </tr>
+                      )}
                       <tr className="font-bold" style={{ color: '#dc2626' }}>
                         <td colSpan={4} />
                         <td className="px-2 py-1 text-right">TOTAL</td>
