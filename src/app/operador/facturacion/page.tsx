@@ -38,6 +38,20 @@ type PedidoRow = {
   cobro_espera: number | null
 }
 
+type ManualItem = {
+  id: string
+  descripcion: string
+  importe: number
+}
+
+type InvoiceItem = {
+  codigo: number | null
+  created_at: string
+  descripcion: string
+  importe: number
+  cobro_espera: number
+}
+
 const defaultConfig: EmpresaConfig = {
   nombre: '',
   cuit: '',
@@ -119,8 +133,13 @@ export default function FacturacionPage() {
     clienteNombre: string
     clienteCuit: string
     clienteDireccion: string
-    pedidos: PedidoRow[]
+    items: InvoiceItem[]
   } | null>(null)
+
+  // Manual items state
+  const [itemsManuales, setItemsManuales] = useState<ManualItem[]>([])
+  const [descripcionManual, setDescripcionManual] = useState('')
+  const [montoManual, setMontoManual] = useState('')
 
   // ──────────────────────────────────────────────
   // 5a: Load empresa config
@@ -333,9 +352,27 @@ export default function FacturacionPage() {
   // ── Preview / Generate PDF ──
   const selectedPedidos = pedidos.filter((p) => selectedIds.has(p.id))
 
+  const allItems: InvoiceItem[] = useMemo(() => {
+    const pedidoRows = selectedPedidos.map((p) => ({
+      codigo: p.codigo,
+      created_at: p.created_at,
+      descripcion: p.descripcion,
+      importe: p.importe ?? 0,
+      cobro_espera: p.cobro_espera ?? 0,
+    }))
+    const manualRows = itemsManuales.map((m) => ({
+      codigo: null,
+      created_at: new Date().toISOString(),
+      descripcion: m.descripcion,
+      importe: m.importe,
+      cobro_espera: 0,
+    }))
+    return [...pedidoRows, ...manualRows]
+  }, [selectedPedidos, itemsManuales])
+
   const handlePreview = useCallback(() => {
-    if (selectedPedidos.length === 0) {
-      toast.error('Seleccioná al menos un pedido')
+    if (allItems.length === 0) {
+      toast.error('Seleccioná pedidos o agregá items manuales')
       return
     }
     setPreviewData({
@@ -343,13 +380,13 @@ export default function FacturacionPage() {
       clienteNombre,
       clienteCuit,
       clienteDireccion,
-      pedidos: selectedPedidos,
+      items: allItems,
     })
-  }, [selectedPedidos, config, clienteNombre, clienteCuit, clienteDireccion])
+  }, [allItems, config, clienteNombre, clienteCuit, clienteDireccion])
 
   const generatePDF = useCallback(() => {
-    if (selectedPedidos.length === 0) {
-      toast.error('Seleccioná al menos un pedido')
+    if (allItems.length === 0) {
+      toast.error('Seleccioná pedidos o agregá items manuales')
       return
     }
 
@@ -447,8 +484,8 @@ export default function FacturacionPage() {
       doc.setFont('Helvetica', 'normal')
       doc.setFontSize(9)
       doc.text(`Cliente: ${clienteNombre}`, margin + 2, y + 13)
-      doc.text(`CUIT: ${clienteCuit}`, margin + 2, y + 18)
-      doc.text(`Dirección: ${clienteDireccion}`, margin + 2, y + 23)
+      if (clienteCuit) doc.text(`CUIT: ${clienteCuit}`, margin + 2, y + 18)
+      if (clienteDireccion) doc.text(`Dirección: ${clienteDireccion}`, margin + 2, y + 23)
       y += clienteBoxH + 6
 
       // ── Periodo text ──
@@ -460,18 +497,20 @@ export default function FacturacionPage() {
       )
       y += 6
 
-      // ── Pedidos table ──
-      const tableBody = selectedPedidos.map((p) => [
-        String(p.codigo),
-        new Date(p.created_at).toLocaleDateString('es-AR'),
-        p.descripcion,
-        `$${(p.importe ?? 0).toFixed(2)}`,
-        `$${(p.cobro_espera ?? 0).toFixed(2)}`,
-        `$${((p.importe ?? 0) + (p.cobro_espera ?? 0)).toFixed(2)}`,
+      // ── Items table ──
+      const tableBody = allItems.map((item) => [
+        item.codigo ? String(item.codigo) : '—',
+        item.created_at
+          ? new Date(item.created_at).toLocaleDateString('es-AR')
+          : '',
+        item.descripcion,
+        `$${(item.importe).toFixed(2)}`,
+        `$${(item.cobro_espera).toFixed(2)}`,
+        `$${(item.importe + item.cobro_espera).toFixed(2)}`,
       ])
 
-      const subtotal = selectedPedidos.reduce(
-        (sum, p) => sum + (p.importe ?? 0) + (p.cobro_espera ?? 0),
+      const subtotal = allItems.reduce(
+        (sum, item) => sum + item.importe + item.cobro_espera,
         0,
       )
       const iva = subtotal * 0.21
@@ -573,7 +612,7 @@ export default function FacturacionPage() {
     } finally {
       setGeneratingPdf(false)
     }
-  }, [selectedPedidos, config, clienteNombre, clienteCuit, clienteDireccion, fechaDesde, fechaHasta])
+  }, [allItems, config, clienteNombre, clienteCuit, clienteDireccion, fechaDesde, fechaHasta])
 
   // ──────────────────────────────────────────────
   // Loading state
@@ -957,19 +996,115 @@ export default function FacturacionPage() {
             </div>
           )}
 
+          {/* ── Items manuales ── */}
+          <div className="border-t border-gray-200 pt-4 dark:border-zinc-700">
+            <p className="mb-3 text-sm font-semibold text-gray-800 dark:text-zinc-200">
+              Items manuales (adicionales a la factura)
+            </p>
+
+            {/* Form to add */}
+            <div className="mb-3 flex flex-wrap items-end gap-3">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-zinc-400">
+                  Descripción
+                </label>
+                <input
+                  type="text"
+                  value={descripcionManual}
+                  onChange={(e) => setDescripcionManual(e.target.value)}
+                  placeholder="Ej: Flete especial"
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white"
+                />
+              </div>
+              <div className="w-32">
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-zinc-400">
+                  Importe ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={montoManual}
+                  onChange={(e) => setMontoManual(e.target.value)}
+                  placeholder="0.00"
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary dark:border-zinc-700 dark:bg-[#1a1a1a] dark:text-white"
+                />
+              </div>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const monto = parseFloat(montoManual)
+                  if (!descripcionManual.trim() || isNaN(monto) || monto <= 0) {
+                    toast.error('Completá descripción e importe')
+                    return
+                  }
+                  setItemsManuales((prev) => [
+                    ...prev,
+                    {
+                      id: `manual-${Date.now()}`,
+                      descripcion: descripcionManual.trim(),
+                      importe: monto,
+                    },
+                  ])
+                  setDescripcionManual('')
+                  setMontoManual('')
+                }}
+              >
+                Agregar
+              </Button>
+            </div>
+
+            {/* List of manual items */}
+            {itemsManuales.length > 0 && (
+              <div className="mb-3 rounded-lg border border-gray-200 dark:border-zinc-700">
+                <table className="min-w-full divide-y divide-gray-200 text-sm dark:divide-zinc-700">
+                  <thead className="bg-gray-50 dark:bg-zinc-800">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-zinc-400">Descripción</th>
+                      <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">Importe</th>
+                      <th className="w-16 px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
+                    {itemsManuales.map((item) => (
+                      <tr key={item.id} className="bg-white dark:bg-[#1a1a1a]">
+                        <td className="px-3 py-2 text-gray-700 dark:text-zinc-300">{item.descripcion}</td>
+                        <td className="px-3 py-2 text-right font-medium text-gray-900 dark:text-white">
+                          ${item.importe.toFixed(2)}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setItemsManuales((prev) => prev.filter((x) => x.id !== item.id))
+                              setPreviewData(null)
+                            }}
+                            className="text-xs text-red-600 hover:underline dark:text-red-400"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
           {/* Preview / Generate buttons */}
-          {pedidos.length > 0 && (
+          {(pedidos.length > 0 || itemsManuales.length > 0) && (
             <div className="flex items-center justify-end gap-3 pt-2">
               <Button
                 variant="outline"
                 onClick={handlePreview}
-                disabled={selectedIds.size === 0}
+                disabled={selectedIds.size === 0 && itemsManuales.length === 0}
               >
                 Vista previa
               </Button>
               <Button
                 onClick={generatePDF}
-                disabled={generatingPdf || selectedIds.size === 0}
+                disabled={generatingPdf || (selectedIds.size === 0 && itemsManuales.length === 0)}
               >
                 {generatingPdf
                   ? 'Generando...'
@@ -1055,29 +1190,29 @@ export default function FacturacionPage() {
                 </tr>
               </thead>
               <tbody>
-                {previewData.pedidos.map((p) => (
-                  <tr key={p.id} className="border border-gray-300 dark:border-zinc-600">
-                    <td className="px-2 py-1">#{p.codigo}</td>
+                {previewData.items.map((item, idx) => (
+                  <tr key={idx} className="border border-gray-300 dark:border-zinc-600">
+                    <td className="px-2 py-1">{item.codigo ? `#${item.codigo}` : '—'}</td>
                     <td className="px-2 py-1">
-                      {new Date(p.created_at).toLocaleDateString('es-AR')}
+                      {item.created_at ? new Date(item.created_at).toLocaleDateString('es-AR') : '—'}
                     </td>
-                    <td className="px-2 py-1">{p.descripcion}</td>
+                    <td className="px-2 py-1">{item.descripcion}</td>
                     <td className="px-2 py-1 text-right">
-                      ${(p.importe ?? 0).toFixed(2)}
+                      ${item.importe.toFixed(2)}
                     </td>
                     <td className="px-2 py-1 text-right">
-                      ${(p.cobro_espera ?? 0).toFixed(2)}
+                      ${item.cobro_espera.toFixed(2)}
                     </td>
                     <td className="px-2 py-1 text-right font-medium">
-                      ${((p.importe ?? 0) + (p.cobro_espera ?? 0)).toFixed(2)}
+                      ${(item.importe + item.cobro_espera).toFixed(2)}
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 {(() => {
-                  const sub = previewData.pedidos.reduce(
-                    (s, p) => s + (p.importe ?? 0) + (p.cobro_espera ?? 0),
+                  const sub = previewData.items.reduce(
+                    (s, item) => s + item.importe + item.cobro_espera,
                     0,
                   )
                   const iva = sub * 0.21

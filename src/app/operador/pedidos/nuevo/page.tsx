@@ -20,6 +20,12 @@ const FORMA_PAGO_OPTIONS = [
   { value: 'cuenta_corriente', label: 'Cuenta corriente' },
 ]
 
+const TIPO_OPTIONS = [
+  { value: 'entrega', label: 'Entrega de paquete' },
+  { value: 'retiro', label: 'Retiro de cliente' },
+  { value: 'tramite', label: 'Trámite' },
+]
+
 type ClienteOption = { id: string; nombre: string; telefono: string | null; direccion_habitual: string | null; modalidad_pago: string | null }
 type ContactoOption = { id: string; nombre: string; cargo: string | null; telefono: string | null }
 
@@ -37,6 +43,7 @@ type FormData = {
   hora_salida: string
   importe: string
   forma_pago: string
+  tipo: string
 }
 
 const INITIAL_FORM: FormData = {
@@ -53,6 +60,7 @@ const INITIAL_FORM: FormData = {
   hora_salida: '',
   importe: '',
   forma_pago: '',
+  tipo: 'entrega',
 }
 
 export default function NuevoPedidoPage() {
@@ -229,7 +237,7 @@ export default function NuevoPedidoPage() {
     setSubmitting(true)
 
     try {
-      const palabraClave = generarPalabraClave()
+      const palabraClave = form.tipo === 'entrega' ? generarPalabraClave() : ''
       const contactoNombre = contactoOtro ? contactoOtroNombre.trim() : form.contacto_nombre.trim()
 
       const assignedCadete = cadetes.find((c) => c.id === cadeteId)
@@ -252,6 +260,7 @@ export default function NuevoPedidoPage() {
           hora_salida: form.hora_salida || null,
           importe: form.importe ? parseFloat(form.importe) : null,
           forma_pago: form.forma_pago || null,
+          tipo: form.tipo,
         })
         .select('id, codigo, token_cliente, palabra_clave')
         .single()
@@ -278,7 +287,9 @@ export default function NuevoPedidoPage() {
 
       toast.success('Pedido creado exitosamente', {
         duration: 10000,
-        description: `Palabra clave: ${palabraClave} — Código #${data.codigo}`,
+        description: palabraClave
+          ? `Palabra clave: ${palabraClave} — Código #${data.codigo}`
+          : `Código #${data.codigo} — ${form.tipo}`,
       })
 
       // Mostrar panel con palabra clave + token + link de tracking
@@ -472,6 +483,14 @@ export default function NuevoPedidoPage() {
                 }
               />
               <Select
+                label="Tipo de pedido"
+                options={TIPO_OPTIONS}
+                value={form.tipo}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, tipo: e.target.value }))
+                }
+              />
+              <Select
                 label="Asignar a cadete (opcional)"
                 options={[
                   { value: '', label: 'Sin asignar (pendiente)' },
@@ -581,10 +600,12 @@ export default function NuevoPedidoPage() {
           <h2 className="text-lg font-bold text-green-800 dark:text-green-300">Pedido creado</h2>
 
           <div className="mt-4 space-y-3 text-left">
-            <div className="rounded-lg bg-white p-3 dark:bg-[#1a1a1a]">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Palabra clave</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{pedidoCreado.palabra_clave}</p>
-            </div>
+            {pedidoCreado.palabra_clave && (
+              <div className="rounded-lg bg-white p-3 dark:bg-[#1a1a1a]">
+                <p className="text-xs text-gray-500 dark:text-zinc-400">Palabra clave</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{pedidoCreado.palabra_clave}</p>
+              </div>
+            )}
             <div className="rounded-lg bg-white p-3 dark:bg-[#1a1a1a]">
               <p className="text-xs text-gray-500 dark:text-zinc-400">Código</p>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">#{pedidoCreado.codigo}</p>
