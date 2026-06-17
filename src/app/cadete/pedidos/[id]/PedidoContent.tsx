@@ -19,6 +19,7 @@ type Pedido = {
   id: string
   palabra_clave: string
   estado: string
+  tipo: string
   retiro_direccion: string
   retiro_contacto: string | null
   retiro_telefono: string | null
@@ -31,6 +32,12 @@ type Pedido = {
 }
 
 type FormType = 'entregado' | 'no_atendio' | 'cerrado' | 'otro'
+
+const TIPO_LABEL: Record<string, string> = {
+  entrega: 'Entrega',
+  retiro: 'Retiro',
+  tramite: 'Trámite',
+}
 
 export default function PedidoContent() {
   const params = useParams()
@@ -165,9 +172,15 @@ export default function PedidoContent() {
   }
 
   const handleLlegue = () => {
-    setMostrarInputClave(true)
-    setInputClave('')
-    setErrorClave(null)
+    const requierePalabraClave = pedido?.tipo === 'entrega' && pedido?.palabra_clave?.trim()
+    if (requierePalabraClave) {
+      setMostrarInputClave(true)
+      setInputClave('')
+      setErrorClave(null)
+    } else {
+      setClaveVerificada(true)
+      setShowDeliveryOptions(true)
+    }
   }
 
   const handleVerificarClave = () => {
@@ -450,9 +463,16 @@ export default function PedidoContent() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {estado === 'en_retiro' ? 'Retiro' : estado === 'en_camino' ? 'Entrega' : 'Pedido'}
             </h1>
-            <Badge className={getEstadoColor(estado)}>
-              {getEstadoLabel(estado)}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {pedido.tipo && (
+                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-400">
+                  {TIPO_LABEL[pedido.tipo] || pedido.tipo}
+                </Badge>
+              )}
+              <Badge className={getEstadoColor(estado)}>
+                {getEstadoLabel(estado)}
+              </Badge>
+            </div>
           </div>
 
           {/* Active address */}
@@ -812,7 +832,11 @@ export default function PedidoContent() {
       {showForm && (
         <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-zinc-800 dark:bg-[#1a1a1a]">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-            {formType === 'entregado' && 'Registrar entrega'}
+            {formType === 'entregado' && (
+              pedido.tipo === 'retiro' ? 'Confirmar retiro' :
+              pedido.tipo === 'tramite' ? 'Confirmar trámite realizado' :
+              'Registrar entrega'
+            )}
             {formType === 'no_atendio' && 'Registrar: No atendió nadie'}
             {formType === 'cerrado' && 'Registrar: Local cerrado'}
             {formType === 'otro' && 'Registrar: Otro motivo'}

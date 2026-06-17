@@ -12,6 +12,7 @@ type Pedido = {
   id: string
   palabra_clave: string
   estado: string
+  tipo: string
   retiro_direccion: string
   retiro_contacto: string | null
   retiro_telefono: string | null
@@ -21,6 +22,12 @@ type Pedido = {
   notas: string | null
   created_at: string
   cadete_id: string
+}
+
+const TIPO_LABEL: Record<string, string> = {
+  entrega: 'Entrega',
+  retiro: 'Retiro',
+  tramite: 'Trámite',
 }
 
 const PRIORITY: Record<string, number> = {
@@ -185,9 +192,16 @@ export default function CadetePage() {
                       ? 'Entrega'
                       : 'Pedido'}
                 </h2>
-                <Badge className={getEstadoColor(pedido.estado)}>
-                  {getEstadoLabel(pedido.estado)}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {pedido.tipo && (
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-400">
+                      {TIPO_LABEL[pedido.tipo] || pedido.tipo}
+                    </Badge>
+                  )}
+                  <Badge className={getEstadoColor(pedido.estado)}>
+                    {getEstadoLabel(pedido.estado)}
+                  </Badge>
+                </div>
               </div>
               <p className="mb-1 text-sm text-gray-600 dark:text-zinc-300">{direccion}</p>
               {contacto && (
