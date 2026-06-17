@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useRef } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { Geolocation as CapGeolocation } from '@capacitor/geolocation'
+import { BackgroundGeolocation } from '@capgo/background-geolocation'
 
 const isNative = Capacitor.isNativePlatform()
 
@@ -11,6 +12,7 @@ export function useCadetePosition(cadeteId: string | undefined) {
   const watchRef = useRef<string | number | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const positionRef = useRef<{ latitude: number; longitude: number } | null>(null)
+  const bgStartedRef = useRef(false)
   const supabase = createClient()
 
   // Get the cadete's currently active pedido (first one found)
@@ -40,7 +42,7 @@ export function useCadetePosition(cadeteId: string | undefined) {
       timestamp: new Date().toISOString(),
     }
 
-    // 1. Upsert latest position (keeps ubicaciones_cadete up to date)
+    // 1. Upsert latest position
     const { error: upsertError } = await supabase
       .from('ubicaciones_cadete')
       .upsert(payload, { onConflict: 'cadete_id' })
@@ -68,9 +70,13 @@ export function useCadetePosition(cadeteId: string | undefined) {
   useEffect(() => {
     if (!cadeteId) return
 
+    let isCancelled = false
+
     async function startWatching() {
       if (isNative) {
-        // Capacitor native platform — use @capacitor/geolocation
+        // ========================================
+        // NATIVE -- @capgo/background-geolocation
+        // ========================================
         try {
           const permResult = await CapGeolocation.requestPermissions()
           if (permResult.location === 'denied') {
@@ -82,25 +88,58 @@ export function useCadetePosition(cadeteId: string | undefined) {
           return
         }
 
-        const callbackId = await CapGeolocation.watchPosition(
-          { enableHighAccuracy: true, timeout: 10000 },
-          (position, err) => {
-            if (err) {
-              console.error('[CADETE GPS] Capacitor watchPosition error:', err)
-              return
-            }
-            if (position) {
-              positionRef.current = {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
+        try {
+          await BackgroundGeolocation.start(
+            {
+              backgroundMessage: 'Moto Express está rastreando tu ubicación',
+              backgroundTitle: 'Moto Express Cadete',
+              requestPermissions: true,
+              stale: false,
+              distanceFilter: 0,
+            },
+            (location, error) => {
+              if (error) {
+                console.error('[CADETE GPS] BackgroundGeolocation error:', error)
+                return
               }
-            }
-          },
-        )
-
-        watchRef.current = callbackId
+              if (location) {
+                positionRef.current = {
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                }
+              }
+            },
+          )
+          bgStartedRef.current = true
+        } catch (err) {
+          console.error('[CADETE GPS] BackgroundGeolocation start failed:', err)
+          // Fallback to foreground-only Capacitor geolocation
+          try {
+            const callbackId = await CapGeolocation.watchPosition(
+              { enableHighAccuracy: true, timeout: 10000 },
+              (position, err) => {
+                if (err) {
+                  console.error('[CADETE GPS] Capacitor watchPosition error:', err)
+                  return
+                }
+                if (position) {
+                  positionRef.current = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                  }
+                }
+              },
+            )
+            watchRef.current = callbackId
+          } catch {
+            console.error('[CADETE GPS] Fallback watchPosition also failed')
+            return
+          }
+        }
       } else {
-        // Browser platform — use navigator.geolocation
+        // ========================================
+        // BROWSER -- navigator.geolocation
+        // ========================================
         if (!navigator.geolocation) return
 
         watchRef.current = navigator.geolocation.watchPosition(
@@ -121,7 +160,9 @@ export function useCadetePosition(cadeteId: string | undefined) {
         )
       }
 
-      // Start periodic upload
+      if (isCancelled) return
+
+      // Start periodic upload (15-second interval)
       intervalRef.current = setInterval(sendPosition, 15000)
       sendPosition()
     }
@@ -129,13 +170,25 @@ export function useCadetePosition(cadeteId: string | undefined) {
     startWatching()
 
     return () => {
-      if (watchRef.current !== null) {
-        if (isNative) {
+      isCancelled = true
+
+      if (isNative) {
+        if (bgStartedRef.current) {
+          BackgroundGeolocation.stop().catch((err) =>
+            console.error('[CADETE GPS] Error stopping background geolocation:', err),
+          )
+          bgStartedRef.current = false
+        }
+        // Also clear fallback watchPosition if it was used
+        if (watchRef.current !== null) {
           CapGeolocation.clearWatch({ id: watchRef.current as string })
-        } else {
+        }
+      } else {
+        if (watchRef.current !== null) {
           navigator.geolocation.clearWatch(watchRef.current as number)
         }
       }
+
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }

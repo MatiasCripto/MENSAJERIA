@@ -13,6 +13,7 @@ const config: CapacitorConfig = {
   },
   android: {
     backgroundColor: '#f9fafb',
+    useLegacyBridge: true,
   },
 };
 
