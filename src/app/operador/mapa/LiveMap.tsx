@@ -21,11 +21,33 @@ const defaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = defaultIcon
 
-// Cadete marker icon
+// Cadete marker icon (active GPS)
 const cadeteIcon = L.divIcon({
   className: '',
   html: `<div style="
     background-color: #dc2626;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  ">📍</div>`,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+  popupAnchor: [0, -18],
+})
+
+// Cadete marker icon (inactive GPS)
+const cadeteIconInactivo = L.divIcon({
+  className: '',
+  html: `<div style="
+    background-color: #9ca3af;
     color: white;
     width: 36px;
     height: 36px;
@@ -49,6 +71,7 @@ interface CadetePosition {
   lng: number
   timestamp: string
   cadete_nombre: string
+  gps_activo?: boolean | null
 }
 
 interface LiveMapProps {
@@ -109,13 +132,18 @@ function LiveMap({ positions, className }: LiveMapProps) {
             <Marker
               key={pos.cadete_id}
               position={[pos.lat, pos.lng]}
-              icon={cadeteIcon}
+              icon={pos.gps_activo === false ? cadeteIconInactivo : cadeteIcon}
             >
               <Popup>
                 <div className="min-w-[120px] text-sm">
                   <p className="font-semibold text-gray-900">
                     {pos.cadete_nombre}
                   </p>
+                  {pos.gps_activo === false && (
+                    <p className="mt-1 text-xs font-medium text-red-600">
+                      Sin ubicación — GPS desactivado
+                    </p>
+                  )}
                   <p className="mt-0.5 text-xs text-gray-500">
                     Última actualización:{' '}
                     {new Date(pos.timestamp).toLocaleTimeString('es-AR', {

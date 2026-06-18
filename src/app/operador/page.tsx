@@ -39,6 +39,7 @@ type CadeteStats = {
   kmRecorridos: number
   tiempoParadas: number
   ultimoMovimiento: string | null
+  ubicacionActiva: boolean
 }
 
 function toRad(deg: number) {
@@ -104,6 +105,7 @@ export default function OperadorDashboard() {
   })
   const [cadeteStats, setCadeteStats] = useState<CadeteStats[]>([])
   const [esperandoPagoCount, setEsperandoPagoCount] = useState(0)
+  const [sinUbicacionCount, setSinUbicacionCount] = useState(0)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -193,9 +195,36 @@ export default function OperadorDashboard() {
       }
 
       if (cadetesActivos) {
+        // Fetch GPS status for all cadetes
+        const { data: ubicaciones } = await supabase
+          .from('ubicaciones_cadete')
+          .select('cadete_id, gps_activo, timestamp, ultima_actualizacion')
+
+        const gpsMap = new Map<string, { gps_activo: boolean | null; ultima_actualizacion: string | null; timestamp: string | null }>()
+        if (ubicaciones) {
+          for (const u of ubicaciones) {
+            gpsMap.set(u.cadete_id, {
+              gps_activo: u.gps_activo,
+              ultima_actualizacion: u.ultima_actualizacion ?? u.timestamp,
+              timestamp: u.timestamp,
+            })
+          }
+        }
+
+        let sinGPS = 0
+
         for (const c of cadetesActivos) {
           const puntos = recorridosPorCadete[c.id] ?? []
           const ultimo = puntos.length > 0 ? puntos[puntos.length - 1] : null
+
+          const gps = gpsMap.get(c.id)
+          const ultimaActualizacion = gps?.ultima_actualizacion ?? ultimo?.timestamp ?? null
+          const tiempoSinGPS = ultimaActualizacion
+            ? Date.now() - new Date(ultimaActualizacion).getTime()
+            : Infinity
+          const ubicacionActiva = !(gps?.gps_activo === false || tiempoSinGPS > 5 * 60 * 1000)
+
+          if (!ubicacionActiva) sinGPS++
 
           statsList.push({
             id: c.id,
@@ -204,8 +233,10 @@ export default function OperadorDashboard() {
             kmRecorridos: calcularKm(puntos),
             tiempoParadas: detectarParadas(puntos),
             ultimoMovimiento: ultimo?.timestamp ?? null,
+            ubicacionActiva,
           })
         }
+        setSinUbicacionCount(sinGPS)
       }
 
       setCadeteStats(statsList)
@@ -350,6 +381,28 @@ export default function OperadorDashboard() {
         </div>
       )}
 
+      {/* GPS alert */}
+      {sinUbicacionCount > 0 && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                {sinUbicacionCount} cadete{sinUbicacionCount !== 1 ? 's' : ''} sin reportar ubicación
+              </p>
+              <p className="text-xs text-red-600 dark:text-red-400">
+                Pueden tener el GPS desactivado o sin señal
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => router.push('/operador/mapa')}
+            >
+              Ver mapa
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Recent orders */}
       <Card title="Últimos pedidos">
         {pedidos.length === 0 ? (
@@ -434,6 +487,7 @@ export default function OperadorDashboard() {
               <thead className="bg-gray-50 dark:bg-zinc-800/50">
                 <tr>
                   <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">Cadete</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">Ubicación</th>
                   <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">Entregados</th>
                   <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">Km</th>
                   <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">Paradas</th>
@@ -444,6 +498,19 @@ export default function OperadorDashboard() {
                 {cadeteStats.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50">
                     <td className="whitespace-nowrap px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">{c.nombre}</td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          c.ubicacionActiva
+                            ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-400'
+                            : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-400'
+                        }`}
+                        title={c.ubicacionActiva ? 'Reportando ubicación' : 'Sin reportar ubicación — puede tener el GPS desactivado o sin señal'}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${c.ubicacionActiva ? 'bg-green-500' : 'bg-red-500'}`} />
+                        {c.ubicacionActiva ? 'Activo' : 'Sin ubicación'}
+                      </span>
+                    </td>
                     <td className="whitespace-nowrap px-3 py-3 text-right text-sm text-gray-700 dark:text-zinc-300">{c.entregados}</td>
                     <td className="whitespace-nowrap px-3 py-3 text-right text-sm text-gray-700 dark:text-zinc-300">{c.kmRecorridos} km</td>
                     <td className="whitespace-nowrap px-3 py-3 text-right text-sm text-gray-700 dark:text-zinc-300">{c.tiempoParadas} min</td>

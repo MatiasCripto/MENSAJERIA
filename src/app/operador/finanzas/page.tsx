@@ -172,12 +172,19 @@ export default function FinanzasPage() {
       // ── 1. Pedidos entregados/esperando_pago ──
       const { data: pedidos, error: errPedidos } = await supabase
         .from('pedidos')
-        .select('*, cadetes:usuarios!cadete_id(nombre)')
+        .select('*')
         .in('estado', ['entregado', 'esperando_pago'])
         .gte('updated_at', desde)
         .lte('updated_at', hasta)
 
       if (errPedidos) throw errPedidos
+
+      // ── 1b. Pedido_cadetes for multi-cadete attribution ──
+      const pedidoIds = (pedidos ?? []).map((p) => p.id).filter(Boolean)
+      const { data: pcFinanzas } = await supabase
+        .from('pedido_cadetes')
+        .select('*, cadetes:usuarios!cadete_id(nombre)')
+        .in('pedido_id', pedidoIds.length > 0 ? pedidoIds : [''])
 
       // ── 2. Esperas ──
       const { data: esperas, error: errEsperas } = await supabase
@@ -227,12 +234,6 @@ export default function FinanzasPage() {
       if (errCobros) throw errCobros
 
       const rows = pedidos ?? []
-      const cadeteNameMap = new Map<string, string>()
-      for (const row of rows) {
-        if (row.cadete_id) {
-          cadeteNameMap.set(row.cadete_id, (row.cadetes as { nombre: string } | null)?.nombre ?? 'Desconocido')
-        }
-      }
 
       // ── Compute summary ──
       let totalFacturado = 0
@@ -265,16 +266,21 @@ export default function FinanzasPage() {
 
       const totalEsperas = (esperas ?? []).reduce((sum, e) => sum + Number(e.importe_espera ?? 0), 0)
 
-      // ── Per-cadete breakdown ──
+      // ── Per-cadete breakdown (via pedido_cadetes) ──
+      const importeMap = new Map(rows.map((p) => [p.id, p.importe]))
       const cadMap = new Map<string, CadeteResumenFinanzas>()
-      for (const p of rows) {
-        if (!p.cadete_id) continue
-        if (cadeteFiltro && p.cadete_id !== cadeteFiltro) continue
-        let entry = cadMap.get(p.cadete_id)
+      for (const pc of pcFinanzas ?? []) {
+        if (cadeteFiltro && pc.cadete_id !== cadeteFiltro) continue
+        const importe = importeMap.get(pc.pedido_id) ?? 0
+        const pct = Number(pc.porcentaje_asignado ?? 100)
+        const montoAtribuido = Number(importe) * (pct / 100)
+        const cadeteNombre = (pc.cadetes as { nombre: string } | null)?.nombre ?? 'Desconocido'
+
+        let entry = cadMap.get(pc.cadete_id)
         if (!entry) {
           entry = {
-            cadete_id: p.cadete_id,
-            cadete_nombre: cadeteNameMap.get(p.cadete_id) ?? 'Desconocido',
+            cadete_id: pc.cadete_id,
+            cadete_nombre: cadeteNombre,
             viajes: 0,
             total_viajes: 0,
             total_esperas: 0,
@@ -282,10 +288,10 @@ export default function FinanzasPage() {
             pct_sesenta: 0,
             pct_empresa: 0,
           }
-          cadMap.set(p.cadete_id, entry)
+          cadMap.set(pc.cadete_id, entry)
         }
         entry.viajes++
-        entry.total_viajes += Number(p.importe ?? 0)
+        entry.total_viajes += montoAtribuido
       }
 
       // Add esperas to cadete breakdown

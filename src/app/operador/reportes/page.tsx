@@ -110,7 +110,7 @@ export default function ReportesPage() {
 
     const { data, error } = await supabase
       .from('pedidos')
-      .select('cadete_id, importe, updated_at')
+      .select('id, importe')
       .eq('estado', 'entregado')
       .gte('updated_at', desde)
       .lte('updated_at', hasta)
@@ -121,50 +121,43 @@ export default function ReportesPage() {
       return
     }
 
-    // Build resumen by cadete
+    const pedidoIds = (data ?? []).map((p) => p.id).filter(Boolean)
+    const importeMap = new Map((data ?? []).map((p) => [p.id, p.importe]))
+
+    // Fetch pedido_cadetes for per-cadete attribution
+    const { data: pcData } = await supabase
+      .from('pedido_cadetes')
+      .select('*, cadetes:usuarios!cadete_id(nombre)')
+      .in('pedido_id', pedidoIds.length > 0 ? pedidoIds : [''])
+
+    // Build resumen by cadete from pedido_cadetes
     const map = new Map<string, CadeteResumen>()
-    const rows = data ?? []
 
-    for (const row of rows) {
-      if (!row.cadete_id) continue
-      if (cadeteFiltro && row.cadete_id !== cadeteFiltro) continue
+    for (const pc of pcData ?? []) {
+      if (cadeteFiltro && pc.cadete_id !== cadeteFiltro) continue
 
-      let entry = map.get(row.cadete_id)
+      const importe = importeMap.get(pc.pedido_id) ?? 0
+      const pct = Number(pc.porcentaje_asignado ?? 100)
+      const montoAtribuido = Number(importe) * (pct / 100)
+      const cadeteNombre = (pc.cadetes as { nombre: string } | null)?.nombre ?? 'Desconocido'
+
+      let entry = map.get(pc.cadete_id)
       if (!entry) {
         entry = {
-          cadete_id: row.cadete_id,
-          cadete_nombre: row.cadete_id,
+          cadete_id: pc.cadete_id,
+          cadete_nombre: cadeteNombre,
           cantidad: 0,
           total_importe: 0,
           ganancia_cadete: 0,
           ganancia_empresa: 0,
         }
-        map.set(row.cadete_id, entry)
+        map.set(pc.cadete_id, entry)
       }
 
       entry.cantidad++
-      if (row.importe) entry.total_importe += Number(row.importe)
-
-      const gananciaCadete = row.importe ? Number(row.importe) * 0.7 : 0
-      const gananciaEmpresa = row.importe ? Number(row.importe) * 0.3 : 0
-      entry.ganancia_cadete += gananciaCadete
-      entry.ganancia_empresa += gananciaEmpresa
-    }
-
-    // Resolve cadete names
-    const ids = Array.from(map.keys())
-    if (ids.length > 0) {
-      const { data: names } = await supabase
-        .from('usuarios')
-        .select('id, nombre')
-        .in('id', ids)
-
-      if (names) {
-        const nameMap = new Map(names.map((n) => [n.id, n.nombre]))
-        for (const entry of map.values()) {
-          entry.cadete_nombre = nameMap.get(entry.cadete_id) ?? 'Desconocido'
-        }
-      }
+      entry.total_importe += montoAtribuido
+      entry.ganancia_cadete += montoAtribuido * 0.7
+      entry.ganancia_empresa += montoAtribuido * 0.3
     }
 
     setResumen(Array.from(map.values()).sort((a, b) => a.cadete_nombre.localeCompare(b.cadete_nombre)))

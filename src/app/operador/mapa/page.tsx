@@ -16,6 +16,8 @@ type CadetePosition = {
   lng: number
   timestamp: string
   cadete_nombre: string
+  gps_activo: boolean | null
+  ultima_actualizacion: string | null
 }
 
 type CadeteInfo = {
@@ -63,7 +65,7 @@ export default function MapaPage() {
 
       const latestPositions = new Map<string, CadetePosition>()
 
-      ;(ubicaciones ?? []).forEach((u: { cadete_id: string; lat: number; lng: number; timestamp: string }) => {
+      ;(ubicaciones ?? []).forEach((u: { cadete_id: string; lat: number; lng: number; timestamp: string; gps_activo: boolean | null; ultima_actualizacion: string | null }) => {
         const existing = latestPositions.get(u.cadete_id)
         if (!existing || new Date(u.timestamp) > new Date(existing.timestamp)) {
           latestPositions.set(u.cadete_id, {
@@ -72,6 +74,8 @@ export default function MapaPage() {
             lng: u.lng,
             timestamp: u.timestamp,
             cadete_nombre: cadeteMap.get(u.cadete_id) ?? 'Desconocido',
+            gps_activo: u.gps_activo,
+            ultima_actualizacion: u.ultima_actualizacion ?? u.timestamp,
           })
         }
       })
@@ -182,15 +186,23 @@ export default function MapaPage() {
       {/* Cadete list */}
       {positions.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {positions.map((pos) => (
-            <span
-              key={pos.cadete_id}
-              className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-900"
-            >
-              <span className="h-2 w-2 rounded-full bg-green-500" />
-              {pos.cadete_nombre}
-            </span>
-          ))}
+          {positions.map((pos) => {
+            const activo = pos.gps_activo !== false
+            return (
+              <span
+                key={pos.cadete_id}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ${
+                  activo
+                    ? 'bg-green-50 text-green-700 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-900'
+                    : 'bg-gray-50 text-gray-600 ring-gray-200 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700'
+                }`}
+                title={activo ? '' : 'GPS desactivado — sin ubicación'}
+              >
+                <span className={`h-2 w-2 rounded-full ${activo ? 'bg-green-500' : 'bg-gray-400'}`} />
+                {pos.cadete_nombre}
+              </span>
+            )
+          })}
         </div>
       )}
 

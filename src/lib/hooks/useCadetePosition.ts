@@ -13,6 +13,7 @@ export function useCadetePosition(cadeteId: string | undefined) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const positionRef = useRef<{ latitude: number; longitude: number } | null>(null)
   const bgStartedRef = useRef(false)
+  const gpsInactivoReportadoRef = useRef(false)
   const supabase = createClient()
 
   // Get the cadete's currently active pedido (first one found)
@@ -40,6 +41,8 @@ export function useCadetePosition(cadeteId: string | undefined) {
       lat: pos.latitude,
       lng: pos.longitude,
       timestamp: new Date().toISOString(),
+      gps_activo: true,
+      ultima_actualizacion: new Date().toISOString(),
     }
 
     // 1. Upsert latest position
@@ -50,6 +53,9 @@ export function useCadetePosition(cadeteId: string | undefined) {
     if (upsertError) {
       console.error('[CADETE GPS] upsert error:', upsertError.message)
     }
+
+    // Reset inactive flag on successful send
+    gpsInactivoReportadoRef.current = false
 
     // 2. Also insert into recorridos for history tracking
     const pedidoId = await getActivePedidoId()
@@ -100,6 +106,21 @@ export function useCadetePosition(cadeteId: string | undefined) {
             (location, error) => {
               if (error) {
                 console.error('[CADETE GPS] BackgroundGeolocation error:', error)
+                // Report GPS inactive immediately
+                if (!gpsInactivoReportadoRef.current && cadeteId) {
+                  gpsInactivoReportadoRef.current = true
+                  supabase
+                    .from('ubicaciones_cadete')
+                    .upsert(
+                      {
+                        cadete_id: cadeteId,
+                        gps_activo: false,
+                        ultima_actualizacion: new Date().toISOString(),
+                      },
+                      { onConflict: 'cadete_id' },
+                    )
+                    .then()
+                }
                 return
               }
               if (location) {
@@ -120,6 +141,21 @@ export function useCadetePosition(cadeteId: string | undefined) {
               (position, err) => {
                 if (err) {
                   console.error('[CADETE GPS] Capacitor watchPosition error:', err)
+                  // Report GPS inactive immediately
+                  if (!gpsInactivoReportadoRef.current && cadeteId) {
+                    gpsInactivoReportadoRef.current = true
+                    supabase
+                      .from('ubicaciones_cadete')
+                      .upsert(
+                        {
+                          cadete_id: cadeteId,
+                          gps_activo: false,
+                          ultima_actualizacion: new Date().toISOString(),
+                        },
+                        { onConflict: 'cadete_id' },
+                      )
+                      .then()
+                  }
                   return
                 }
                 if (position) {

@@ -88,6 +88,17 @@ type UbicacionCadete = {
   updated_at: string
 }
 
+type PedidoCadete = {
+  id: string
+  pedido_id: string
+  cadete_id: string
+  asignado_en: string
+  desasignado_en: string | null
+  porcentaje_asignado: number | null
+  monto_asignado: number | null
+  cadete_nombre: string
+}
+
 export default function PedidoDetailPage() {
   const { isOperador, loading } = useSession()
   const router = useRouter()
@@ -104,6 +115,13 @@ export default function PedidoDetailPage() {
   const [showAssignDialog, setShowAssignDialog] = useState(false)
   const [selectedCadeteId, setSelectedCadeteId] = useState('')
   const [assigning, setAssigning] = useState(false)
+  const [pedidoCadetes, setPedidoCadetes] = useState<PedidoCadete[]>([])
+  const [showReassignDialog, setShowReassignDialog] = useState(false)
+  const [reassignCadeteId, setReassignCadeteId] = useState('')
+  const [reassigning, setReassigning] = useState(false)
+  const [editingReparto, setEditingReparto] = useState(false)
+  const [repartoPorcentajes, setRepartoPorcentajes] = useState<Record<string, string>>({})
+  const [savingReparto, setSavingReparto] = useState(false)
   const [editingBilling, setEditingBilling] = useState(false)
   const [billingForm, setBillingForm] = useState({
     cliente_empresa: '',
@@ -137,6 +155,28 @@ export default function PedidoDetailPage() {
         .order('created_at', { ascending: false })
 
       setIntentos(intentosData ?? [])
+
+      // Fetch pedido_cadetes history
+      const { data: pcData } = await supabase
+        .from('pedido_cadetes')
+        .select('*')
+        .eq('pedido_id', pedidoId)
+        .order('asignado_en', { ascending: true })
+
+      if (pcData) {
+        const ids = [...new Set(pcData.map((pc) => pc.cadete_id))]
+        const { data: names } = await supabase
+          .from('usuarios')
+          .select('id, nombre')
+          .in('id', ids)
+        const nameMap = new Map((names ?? []).map((n) => [n.id, n.nombre]))
+        setPedidoCadetes(
+          pcData.map((pc) => ({
+            ...pc,
+            cadete_nombre: nameMap.get(pc.cadete_id) ?? 'Desconocido',
+          })),
+        )
+      }
 
       // Fetch cadetes for assign dialog
       const { data: cadetesData } = await supabase
@@ -301,6 +341,96 @@ export default function PedidoDetailPage() {
 
   const [confirmandoPago, setConfirmandoPago] = useState(false)
 
+  const handleReassignCadete = async () => {
+    if (!reassignCadeteId || !pedido) return
+    setReassigning(true)
+    try {
+      // Close current active records
+      const { data: activos } = await supabase
+        .from('pedido_cadetes')
+        .select('id')
+        .eq('pedido_id', pedido.id)
+        .is('desasignado_en', null)
+
+      if (activos) {
+        for (const a of activos) {
+          await supabase
+            .from('pedido_cadetes')
+            .update({ desasignado_en: new Date().toISOString() })
+            .eq('id', a.id)
+        }
+      }
+
+      // Insert new cadete
+      await supabase.from('pedido_cadetes').insert({
+        pedido_id: pedido.id,
+        cadete_id: reassignCadeteId,
+      })
+
+      // Update pedido
+      await supabase
+        .from('pedidos')
+        .update({ cadete_id: reassignCadeteId })
+        .eq('id', pedido.id)
+
+      // Recalculate percentages equitatively among all participants
+      const { data: allRecords } = await supabase
+        .from('pedido_cadetes')
+        .select('*')
+        .eq('pedido_id', pedido.id)
+        .order('asignado_en', { ascending: true })
+
+      const count = allRecords?.length ?? 0
+      const pct = count > 0 ? Math.round((100 / count) * 100) / 100 : 100
+      for (const pc of allRecords ?? []) {
+        const monto = pedido.importe != null ? Number(pedido.importe) * (pct / 100) : null
+        await supabase
+          .from('pedido_cadetes')
+          .update({ porcentaje_asignado: pct, monto_asignado: monto })
+          .eq('id', pc.id)
+      }
+
+      toast.success('Pedido reasignado al nuevo cadete')
+      setShowReassignDialog(false)
+      setReassignCadeteId('')
+      fetchPedido()
+    } catch (err) {
+      toast.error('Error al reasignar el pedido')
+      console.error(err)
+    } finally {
+      setReassigning(false)
+    }
+  }
+
+  const handleGuardarReparto = async () => {
+    if (!pedido) return
+    const pcts = Object.values(repartoPorcentajes).map(Number)
+    const sum = pcts.reduce((a, b) => a + b, 0)
+    if (Math.abs(sum - 100) > 0.01) {
+      toast.error('Los porcentajes deben sumar 100%')
+      return
+    }
+    setSavingReparto(true)
+    try {
+      for (const [id, pctStr] of Object.entries(repartoPorcentajes)) {
+        const pct = Number(pctStr)
+        const monto = pedido.importe != null ? Number(pedido.importe) * (pct / 100) : null
+        await supabase
+          .from('pedido_cadetes')
+          .update({ porcentaje_asignado: pct, monto_asignado: monto })
+          .eq('id', id)
+      }
+      toast.success('Reparto guardado')
+      setEditingReparto(false)
+      fetchPedido()
+    } catch (err) {
+      toast.error('Error al guardar el reparto')
+      console.error(err)
+    } finally {
+      setSavingReparto(false)
+    }
+  }
+
   const handleConfirmarPago = async () => {
     if (!pedido) return
     setConfirmandoPago(true)
@@ -430,6 +560,11 @@ export default function PedidoDetailPage() {
               Asignar Cadete
             </Button>
           )}
+          {currentPedido.cadete_id && currentPedido.estado !== 'entregado' && (
+            <Button variant="outline" onClick={() => setShowReassignDialog(true)}>
+              Reasignar cadete
+            </Button>
+          )}
         </div>
       </div>
 
@@ -509,6 +644,81 @@ export default function PedidoDetailPage() {
               </p>
             </div>
           </Card>
+
+          {/* Cadetes que participaron */}
+          {pedidoCadetes.length > 0 && (
+            <Card title="Cadetes que participaron">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 text-sm dark:divide-zinc-800">
+                  <thead className="bg-gray-50 dark:bg-zinc-800/50">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">Cadete</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">Asignado</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">Desasignado</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">%</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white dark:divide-zinc-800 dark:bg-[#1a1a1a]">
+                    {pedidoCadetes.map((pc) => (
+                      <tr key={pc.id}>
+                        <td className="whitespace-nowrap px-3 py-2 font-medium text-gray-900 dark:text-white">
+                          {pc.cadete_nombre}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2 text-xs text-gray-500 dark:text-zinc-400">
+                          {formatDate(pc.asignado_en)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2 text-xs text-gray-500 dark:text-zinc-400">
+                          {pc.desasignado_en ? formatDate(pc.desasignado_en) : <span className="font-medium text-green-600">Actual</span>}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2 text-right">
+                          {editingReparto && pedidoCadetes.length > 1 ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              className="w-20 text-right"
+                              value={repartoPorcentajes[pc.id] ?? String(pc.porcentaje_asignado ?? 0)}
+                              onChange={(e) => setRepartoPorcentajes((prev) => ({ ...prev, [pc.id]: e.target.value }))}
+                            />
+                          ) : (
+                            <span className="text-sm text-gray-700 dark:text-zinc-300">
+                              {Number(pc.porcentaje_asignado ?? 0).toFixed(2)}%
+                            </span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2 text-right text-sm text-gray-700 dark:text-zinc-300">
+                          ${Number(pc.monto_asignado ?? 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {pedidoCadetes.length > 1 && (
+                <div className="mt-3 flex justify-end gap-2">
+                  {editingReparto ? (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingReparto(false)}>Cancelar</Button>
+                      <Button size="sm" onClick={handleGuardarReparto} disabled={savingReparto}>
+                        {savingReparto ? 'Guardando...' : 'Guardar reparto'}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const initial: Record<string, string> = {}
+                      pedidoCadetes.forEach((p) => { initial[p.id] = String(p.porcentaje_asignado ?? 0) })
+                      setRepartoPorcentajes(initial)
+                      setEditingReparto(true)
+                    }}>
+                      Editar reparto
+                    </Button>
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* Información comercial */}
           <Card title="Información comercial">
@@ -762,6 +972,52 @@ export default function PedidoDetailPage() {
                 disabled={!selectedCadeteId || assigning}
               >
                 {assigning ? 'Asignando...' : 'Asignar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reassign cadete dialog */}
+      {showReassignDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-[#1a1a1a]">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+              Reasignar cadete
+            </h2>
+            <p className="mb-4 text-sm text-gray-500 dark:text-zinc-400">
+              El cadete actual será desasignado y se asignará al nuevo. Los porcentajes se recalcularán equitativamente.
+            </p>
+
+            <Select
+              label="Seleccionar nuevo cadete"
+              placeholder="Elige un cadete..."
+              options={cadetes
+                .filter((c) => c.id !== pedido?.cadete_id)
+                .map((c) => ({
+                  value: c.id,
+                  label: c.nombre,
+                }))}
+              value={reassignCadeteId}
+              onChange={(e) => setReassignCadeteId(e.target.value)}
+            />
+
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReassignDialog(false)
+                  setReassignCadeteId('')
+                }}
+                disabled={reassigning}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleReassignCadete}
+                disabled={!reassignCadeteId || reassigning}
+              >
+                {reassigning ? 'Reasignando...' : 'Reasignar'}
               </Button>
             </div>
           </div>
